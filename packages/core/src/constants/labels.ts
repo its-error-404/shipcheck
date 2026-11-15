@@ -1,4 +1,4 @@
-/** Jira label conventions used by the importer and the agent's tools (docs/04-data-mapping.md). */
+/** Jira label conventions used by the importer and the agent's tools (docs/DESIGN.md). */
 export const LABEL_PREFIX = {
   source: "src-",
   kind: "kind-",

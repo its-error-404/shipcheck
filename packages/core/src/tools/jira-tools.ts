@@ -1,5 +1,5 @@
 /**
- * Read-only investigation tools (docs/07-agent-tools.md).
+ * Read-only investigation tools (docs/DESIGN.md).
  * Every result is compact text, capped, and recorded in the evidence ledger.
  */
 import { z } from "zod";

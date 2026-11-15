@@ -1,5 +1,5 @@
 /**
- * Human-readable release-readiness report (docs/13-report.md).
+ * Human-readable release-readiness report (docs/DESIGN.md).
  * Evidence lines are rendered from the ledger (Jira data); the model's own
  * words appear only in the clearly labelled explanation.
  */

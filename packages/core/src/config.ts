@@ -28,7 +28,7 @@ export const loadJiraConfig = (env: NodeJS.ProcessEnv = process.env): JiraConfig
   return parsed.data;
 };
 
-/** LLM configuration (docs/09-llm-adapter.md). Any OpenAI-compatible endpoint. */
+/** LLM configuration (docs/DESIGN.md). Any OpenAI-compatible endpoint. */
 export const LlmConfigSchema = z.object({
   LLM_BASE_URL: z
     .string({ error: "LLM_BASE_URL is not set (e.g. https://generativelanguage.googleapis.com/v1beta/openai/)" })

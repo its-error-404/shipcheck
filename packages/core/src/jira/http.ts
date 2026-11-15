@@ -51,7 +51,7 @@ const isRead = (config: InternalAxiosRequestConfig): boolean => {
 };
 
 /**
- * Retry policy (see docs/05-jira-client.md):
+ * Retry policy (docs/DESIGN.md):
  *  - 429 and 503 mean "not processed": retry reads and writes.
  *  - 502/504 and network errors/timeouts: retry reads only, because a write
  *    may already have been applied and a blind retry could duplicate it.

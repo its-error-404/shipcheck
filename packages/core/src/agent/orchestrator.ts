@@ -1,5 +1,5 @@
 /**
- * Orchestrator (docs/12-orchestrator.md).
+ * Orchestrator (docs/DESIGN.md).
  *
  * Phase 1  discovery agent → plan (validated by code)
  * Phase 2  code reads target + rules from the manifest in Jira

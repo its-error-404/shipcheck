@@ -1,5 +1,5 @@
 /**
- * Evaluation (docs/15-testing-evaluation.md): scores a finished run against
+ * Evaluation (docs/DESIGN.md): scores a finished run against
  * hand-derived expected outcomes. The expected file is read only here, never
  * by the agent, so it measures the agent rather than steering it.
  */

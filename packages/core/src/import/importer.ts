@@ -1,5 +1,5 @@
 /**
- * Repeatable, idempotent importer (docs/06-importer.md).
+ * Repeatable, idempotent importer (docs/DESIGN.md).
  *
  * Every step checks Jira before writing (issues by src- label, comments by
  * their [Source comment n/N] header, links by existing pairs, statuses by

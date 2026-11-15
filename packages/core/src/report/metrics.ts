@@ -1,5 +1,5 @@
 /**
- * Run metrics (docs/14-trace-metrics.md), derived from trace events and results.
+ * Run metrics (docs/DESIGN.md), derived from trace events and results.
  * Cost uses configurable per-million-token prices (0 on free tiers).
  */
 import { TRACE_EVENTS } from "../constants/trace";

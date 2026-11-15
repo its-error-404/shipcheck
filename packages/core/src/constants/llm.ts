@@ -1,4 +1,4 @@
-/** LLM adapter defaults (docs/09-llm-adapter.md). */
+/** LLM adapter defaults (docs/DESIGN.md). */
 export const LLM_DEFAULTS = {
   temperature: 0,
   maxOutputTokens: 8_192,

@@ -1,5 +1,5 @@
 /**
- * Run folder layout (docs/12-orchestrator.md, docs/14-trace-metrics.md):
+ * Run folder layout (docs/DESIGN.md):
  *   runs/<runId>/report.md · report.json · metrics.json · trace.jsonl
  *   runs/<runId>/requirements/<REQ>.json   (written as each finishes: enables --resume)
  *   runs/<runId>/transcripts/<REQ>.json    (full conversation per investigation)

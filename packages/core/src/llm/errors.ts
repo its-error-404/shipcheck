@@ -1,4 +1,4 @@
-/** Typed LLM failures. The orchestrator branches on these (docs/09-llm-adapter.md). */
+/** Typed LLM failures. The orchestrator branches on these (docs/DESIGN.md). */
 export class LlmError extends Error {
   constructor(
     message: string,

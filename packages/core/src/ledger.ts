@@ -1,5 +1,5 @@
 /**
- * Evidence ledger (docs/08-evidence-ledger.md).
+ * Evidence ledger (docs/DESIGN.md).
  *
  * Records every issue and comment a tool returned to the model during one
  * investigation. record_decision is validated against it, so the model can

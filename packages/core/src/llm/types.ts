@@ -1,6 +1,6 @@
 /**
  * Provider-neutral chat types. The agent loop only knows these; adapters map
- * them to a provider's wire format (docs/09-llm-adapter.md).
+ * them to a provider's wire format (docs/DESIGN.md).
  */
 import type { ToolSpec } from "../tools/registry";
 

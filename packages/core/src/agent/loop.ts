@@ -1,5 +1,5 @@
 /**
- * Bounded tool-calling loop (docs/10-agent-loop.md).
+ * Bounded tool-calling loop (docs/DESIGN.md).
  *
  * The model chooses every action through tools. The loop enforces four
  * independent budgets (turns, tool calls, input tokens, wall-clock), warns

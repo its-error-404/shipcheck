@@ -1,4 +1,4 @@
-/** Agent loop defaults and phase budgets (docs/10-agent-loop.md). */
+/** Agent loop defaults and phase budgets (docs/DESIGN.md). */
 export const LOOP_DEFAULTS = {
   warnAtTurnsLeft: 3,
   elideAboveChars: 60_000,

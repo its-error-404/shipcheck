@@ -1,162 +1,65 @@
 # Shipcheck
 
-A tool-using AI agent that investigates Jira and produces an evidence-backed **release-readiness report**: a `PASS` / `FAIL` / `INSUFFICIENT_EVIDENCE` decision per requirement and an overall `BLOCKED` / `NEEDS_REVIEW` / `READY` decision for the release.
+An AI agent that reads Jira and decides whether a release is ready to ship. For each requirement it gathers evidence through tools and decides `PASS`, `FAIL` or `INSUFFICIENT_EVIDENCE`; the overall decision is `BLOCKED`, `NEEDS_REVIEW` or `READY`.
 
-- The model chooses every evidence-gathering action through **read-only, scope-enforced Jira tools**. It never receives the dataset file.
-- Every citation is **validated against what the agent actually fetched** in that run (evidence ledger), and evidence in the report is quoted from Jira, not from the model.
-- The agent **must open and read every linked record and dependency** before it may decide (coverage gate).
-- The overall decision is computed **in code** from a fixed rule.
-- Runs are **bounded** (turns, tool calls, tokens, time), **traced** (JSONL), **measured** (time, tokens, cost) and **resumable**.
+- The model chooses what to look at through **read-only Jira tools**; it never sees the dataset file.
+- **Code checks what the model claims:** every citation must be something the agent actually fetched, linked records must be read before deciding, and a result on another build or prompt cannot support a decision.
+- The overall decision is computed **in code**. Every run is **bounded, traced, measured and resumable**.
 
-TypeScript · Node.js 22 · no agent framework · any OpenAI-compatible LLM (Gemini, Groq, Ollama, OpenAI, Azure OpenAI) · Jira Cloud REST v3 · CLI, plus a Fastify + Socket.io server and React UI with live progress.
+TypeScript · Node.js 22 · no agent framework · any OpenAI-compatible model (Ollama, Gemini, OpenAI, …) · Jira Cloud REST v3 · CLI, plus an optional web UI.
 
 ![Shipcheck web UI](docs/images/ui-run.png)
 
----
+## Result
 
-## Results
+**Release R2.4: BLOCKED.** 4 pass, 5 fail, 3 insufficient evidence. Final report: [`runs/20261115-154957-R2.4/report.md`](runs/20261115-154957-R2.4/report.md), with the trace, each investigation's transcript and metrics in the same folder. Produced with `qwen3:8b` running locally (126 model calls in total, $0). The decisions, how the report was produced over three runs, and what changed along the way are in **[docs/RESULTS.md](docs/RESULTS.md)**. The import was verified against the dataset with no mismatches ([`artifacts/import/verify-report.json`](artifacts/import/verify-report.json)).
 
-**Release R2.4: BLOCKED.** Mandatory requirements failed (REQ-02, REQ-03, REQ-05, REQ-08, REQ-09, REQ-12); 4 pass, 6 fail, 2 insufficient evidence.
+## Quick start
 
-**Final report: [`runs/20261115-142937-R2.4/report.md`](runs/20261115-142937-R2.4/report.md).** It completes the first full run: two investigations in that run had stopped (the PC slept mid-call; a coverage rejection the small model could not act on, since fixed), so they were rerun with `--resume`, reusing the other ten decisions.
-
-| Run                                                           | What                                        | Wall clock | Model calls | Tokens                   | Tool calls | Cost |
-| ------------------------------------------------------------- | ------------------------------------------- | ---------- | ----------- | ------------------------ | ---------- | ---- |
-| [`20261115-110400-R2.4`](runs/20261115-110400-R2.4/report.md) | Full run, 12 requirements (10 decided)      | 1 h 42 m   | 90          | 411,127 (295,190 cached) | 114        | $0   |
-| [`20261115-142937-R2.4`](runs/20261115-142937-R2.4/report.md) | `--resume`: REQ-07 and REQ-12, final report | 12 m       | 16          | 58,148 (37,707 cached)   | 21         | $0   |
-
-Model: `qwen3:8b` locally via Ollama. Each run folder has `report.md` (human), `report.json` (machine), `trace.jsonl` (every model call, tool call and Jira request), `transcripts/` (each investigation's full conversation) and `metrics.json`. Import evidence is in [`artifacts/import/`](artifacts/import/). Details and analysis: [docs/18-submission.md](docs/18-submission.md). Run history and lessons: [docs/15-testing-evaluation.md](docs/15-testing-evaluation.md).
-
----
-
-## Quick start (about 10 minutes, free)
-
-**Prerequisites:** Node.js 22+, a free Jira Cloud site, and an LLM endpoint (a free Gemini API key, or Ollama locally).
+**Needs:** Node.js 22+, a free Jira Cloud site, and a model endpoint (Ollama locally, or a free Gemini key).
 
 ```bash
 npm install
-cp .env.example .env        # fill in Jira + LLM settings (see below)
-npm run check               # typecheck + lint + format + 83 tests (no network needed)
+cp .env.example .env          # Jira and model settings
+npm run check                 # typecheck, lint, format, 90 tests (no network)
 ```
 
-### 1. Jira
-
-1. Create a free site at atlassian.com (Jira → Get it free).
-2. Create a project: **Scrum** template (company-managed) or team-managed Kanban; any key works.
-3. Create an API token at <https://id.atlassian.com/manage-profile/security/api-tokens>.
-4. Set `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY` in `.env`.
+**1. Jira.** Create a free site and a project (any key), and an API token at <https://id.atlassian.com/manage-profile/security/api-tokens>. Set `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`.
 
 ```bash
-npm run verify-jira         # ✓ Authenticated … ✓ Project … (lists project keys if yours is wrong)
-npm run import -- --dry-run # preflight + plan, no writes
-npm run import              # 400 issues, 2,059 comments, links, statuses (safe to rerun; resumes)
-npm run verify-import       # diffs Jira against the dataset → artifacts/import/verify-report.json
+npm run verify-jira           # checks credentials and project
+npm run import                # 400 issues, 2,059 comments, links, statuses (safe to rerun)
+npm run verify-import         # diffs Jira against the dataset
 ```
 
-### 2. LLM (pick one)
+**2. Model.** Any OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`). For a local model on Windows: `npm run setup:ollama` installs Ollama, pulls `qwen3:8b` and updates `.env`. Check with `npm run verify-llm`.
 
-**Gemini (free tier)**: key from <https://aistudio.google.com>:
-
-```
-LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-LLM_API_KEY=...
-LLM_MODEL=<a Flash model>
-LLM_RPM=8
-```
+**3. Assess.**
 
 ```bash
-npm run verify-llm                                       # lists models your key can use
-npm run verify-llm -- --models gemini-3.6-flash,gemini-3.5-flash   # probes tool calling + latency
+npm run assess                          # full assessment (release, project, label from .env)
+npm run assess -- --only REQ-04         # quick demo on one requirement (not a release decision)
+npm run assess -- --resume runs/<id>    # continue a run; finished requirements are reused
+npm run ui                              # optional: web UI on http://127.0.0.1:4000
 ```
 
-Note: some free tiers allow very few requests per day per model; a full run needs roughly 80–150.
-
-**Ollama (local, unlimited, data stays on the machine)**: Windows one-liner:
-
-```bash
-npm run setup:ollama        # installs Ollama, sets context window, pulls qwen3:8b, updates .env
-npm run verify-llm -- --models qwen3:8b
-```
-
-### 3. Assess
-
-```bash
-npm run assess                               # release, label, project from .env (R2.4 by default)
-npm run assess -- --release R2.4 --project KAN
-npm run assess -- --resume runs/<runId>      # continue after a quota stop; decided requirements are reused
-npm run assess -- --only REQ-05              # quick demo: discovery + selected requirements only (not a release decision)
-npm run evaluate -- runs/<runId>             # score against a local expected-outcomes file (eval/README.md)
-```
-
-Local models are slow (about 40 s per turn on an 8 GB GPU; a full run is around an hour). Keep the machine awake during a run: if it sleeps, the investigation in progress times out. `--resume` then reruns only the requirements that did not finish.
-
-### 4. Web UI (optional)
-
-```bash
-npm run ui                  # builds the UI and serves it with the API on http://127.0.0.1:4000
-```
-
-Browse runs, open any requirement to see its reasoning and the Jira evidence quoted with actor, role and time, read the agent's own tool calls, and start a run (full or selected requirements) with live progress over Socket.io. The server binds to localhost: it uses your `.env` credentials. Details: [docs/16-server.md](docs/16-server.md), [docs/17-web-ui.md](docs/17-web-ui.md).
-
----
+A local 8B model takes about 40 s per turn, so a full run is roughly an hour; keep the machine awake. A hosted model is much faster and needs only a configuration change.
 
 ## How it works
 
 ```
-Preflight ─▶ Discovery agent ─▶ Manifest (code) ─▶ Investigator agent × 12 ─▶ Overall (code) ─▶ Report
-             finds manifest +    parses target     fresh context, budget,     any FAIL → BLOCKED
-             requirements via    + rules from      ledger, coverage gate      any INSUFFICIENT → NEEDS_REVIEW
-             tools; validated    Jira                                         else READY
+Discovery agent ─▶ manifest (code) ─▶ one investigator agent per requirement ─▶ overall decision (code) ─▶ report
 ```
 
-| Tool                              | Purpose                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `search_issues`                   | Structured search (code builds the JQL, always inside project + label scope)                     |
-| `get_issue`                       | Metadata, original description, links tagged OUTGOING / INCOMING                                 |
-| `get_comments`                    | Paged comments with **recorded** actor/role/time; near-duplicate noise collapsed                 |
-| `check_scope`                     | Deterministic comparison of a result's release/commit/service/environment/prompt with the target |
-| `submit_plan` / `record_decision` | Terminal tools, validated against Jira and the evidence ledger                                   |
+The agent uses five tools: `search_issues`, `get_issue`, `get_comments`, `check_scope` (compares a result's release, commit, service, environment and prompt with the target) and `record_decision` (validated before it is accepted). Details, decisions and limitations: **[docs/DESIGN.md](docs/DESIGN.md)**. Results and what changed between runs: **[docs/RESULTS.md](docs/RESULTS.md)**. How AI tools were used: [docs/ai-assistance.md](docs/ai-assistance.md).
 
-Full design: **[docs/README.md](docs/README.md)**: one document per module (options considered, decision, rejected alternatives, failure modes, likely questions), decision records, [coding standards](docs/coding-standards.md) and [AI assistance](docs/ai-assistance.md).
-
----
-
-## Repository layout
+## Repository
 
 ```
-packages/core/src/
-  agent/       orchestrator, loop, prompts, manifest parsing, overall decision
-  tools/       read-only agent tools, scoped Jira view, parsers, registry
-  jira/        HTTP layer (retry policy), client (reader/writer split), ADF, JQL
-  import/      dataset schema, mapping, idempotent importer, verifier
-  llm/         provider-neutral types, OpenAI-compatible adapter, rate limiter, scripted test double
-  report/      markdown report, metrics, run store (trace, resume), run reader
-  agent/session.ts  one run end to end, shared by the CLI and the server
-  eval/        scoring against expected outcomes
-  constants/ models/ utils/ testing/ (fake Jira)
-apps/cli/      commands: verify-jira, import, verify-import, verify-llm, assess, evaluate
-apps/server/   Fastify REST API + Socket.io live runs
-apps/web/      React + Vite UI
-artifacts/     import plan, report and ID map from the real import
-docs/          design documentation
-eval/          format of the local expected-outcomes file (read only by `evaluate`, never by the agent)
-inputs/        dataset.json (import input only)
-runs/          assessment outputs
-scripts/       setup-ollama.ps1
+packages/core/   agent (loop, orchestrator, prompts), tools, Jira client, importer, LLM adapter, report
+apps/cli/        commands: verify-jira, import, verify-import, verify-llm, assess, evaluate
+apps/server/     Fastify API + Socket.io (optional UI backend)
+apps/web/        React UI
+runs/            submitted runs: report.md, report.json, trace.jsonl, transcripts/, metrics.json
+artifacts/       import report and verification
 ```
-
-## Commands
-
-| Command                                  | What it does                                |
-| ---------------------------------------- | ------------------------------------------- |
-| `npm run check`                          | Typecheck, lint, format check, tests        |
-| `npm run verify-jira`                    | Credentials + project check                 |
-| `npm run import [-- --dry-run]`          | Idempotent import into Jira                 |
-| `npm run verify-import`                  | Diff Jira against the dataset               |
-| `npm run verify-llm [-- --models a,b]`   | List models; probe tool calling and latency |
-| `npm run assess [-- --resume runs/<id>]` | Run the agent and write the report          |
-| `npm run evaluate -- runs/<id>`          | Score a run against expected outcomes       |
-| `npm run ui`                             | Build the web UI and serve UI + API (:4000) |
-| `npm run serve`                          | Serve the API (and a built UI)              |
-| `npm run web:dev`                        | UI dev server with hot reload (:5173)       |
-| `npm run setup:ollama`                   | Local LLM setup (Windows)                   |

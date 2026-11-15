@@ -1,4 +1,4 @@
-/** Jira Cloud REST API constants (docs/05-jira-client.md). */
+/** Jira Cloud REST API constants (docs/DESIGN.md). */
 export const JIRA_API = "/rest/api/3";
 
 /** Built-in, symmetric link type used for every source link (ADR-008). */

@@ -1,4 +1,4 @@
-/** Tool output and paging limits (docs/07-agent-tools.md). */
+/** Tool output and paging limits (docs/DESIGN.md). */
 export const TOOL_LIMITS = {
   maxResultChars: 6_000,
   searchDefault: 15,

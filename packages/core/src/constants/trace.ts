@@ -1,4 +1,4 @@
-/** Every trace event type, in one place (docs/14-trace-metrics.md). */
+/** Every trace event type, in one place (docs/DESIGN.md). */
 export const TRACE_EVENTS = {
   jiraHttp: "jira_http",
   jiraRetry: "jira_retry",

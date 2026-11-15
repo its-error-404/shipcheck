@@ -1,5 +1,5 @@
 /**
- * Source record → Jira representation (docs/04-data-mapping.md).
+ * Source record → Jira representation (docs/DESIGN.md).
  * Pure functions: no I/O, fully unit-tested.
  */
 import { JIRA_LIMITS } from "../constants/jira";

@@ -1,5 +1,5 @@
 /**
- * System prompts (docs/11-prompts.md). Versioned: the version is recorded in
+ * System prompts (docs/DESIGN.md). Versioned: the version is recorded in
  * the trace and the report. Deliberately generic: no requirement IDs, no
  * dataset examples, no expected outcomes. They work unchanged on any release.
  */

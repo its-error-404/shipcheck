@@ -1,5 +1,5 @@
 /**
- * Builds the Fastify app with Socket.io attached (docs/16-server.md).
+ * Builds the Fastify app with Socket.io attached (docs/DESIGN.md).
  * Kept separate from index.ts so tests can build it on a random port.
  */
 import fastifyStatic from "@fastify/static";
