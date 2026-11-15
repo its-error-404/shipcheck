@@ -7,7 +7,7 @@
  *   npm run assess          run the release-readiness agent (Module 12)
  */
 import "dotenv/config";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Command } from "commander";
 import {
@@ -21,6 +21,9 @@ import {
   TeeTrace,
   assess,
   buildMetrics,
+  ExpectedSchema,
+  evaluateRun,
+  renderEval,
   loadAssessConfig,
   loadLlmConfig,
   loadLlmConnection,
@@ -280,6 +283,23 @@ program
     await jsonl.close();
     console.log(`\nReport: ${join(store.dir, "report.md")}`);
     if (result.status === "ABORTED") process.exitCode = 2;
+  });
+
+program
+  .command("evaluate")
+  .description("Score a finished run against expected outcomes (eval/expected-<release>.json)")
+  .argument("<runDir>", "run folder, e.g. runs/20261115-083548-R2.4")
+  .option("-e, --expected <file>", "expected outcomes file (default: eval/expected-<release>.json)")
+  .action(async (runDir: string, o: { expected?: string }) => {
+    const run = JSON.parse(await readFile(join(runDir, "report.json"), "utf8"));
+    const expectedPath = o.expected ?? join("eval", `expected-${run.request.release}.json`);
+    const expected = ExpectedSchema.parse(JSON.parse(await readFile(expectedPath, "utf8")));
+    const result = evaluateRun(run, expected);
+    const md = renderEval(result);
+    await writeFile(join(runDir, "evaluation.md"), md);
+    await writeFile(join(runDir, "evaluation.json"), JSON.stringify(result, null, 2) + "\n");
+    console.log(md);
+    console.log(`Saved: ${join(runDir, "evaluation.md")}`);
   });
 
 program.parseAsync().catch((err: Error) => {

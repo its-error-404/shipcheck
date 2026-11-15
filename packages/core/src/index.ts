@@ -32,3 +32,4 @@ export * from "./agent/orchestrator";
 export * from "./report/metrics";
 export * from "./report/markdown";
 export * from "./report/run-store";
+export * from "./eval/evaluate";
