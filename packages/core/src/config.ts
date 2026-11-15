@@ -7,11 +7,11 @@ import { z } from "zod";
  */
 export const JiraConfigSchema = z.object({
   JIRA_BASE_URL: z
-    .string()
+    .string({ error: "JIRA_BASE_URL is not set (e.g. https://your-site.atlassian.net)" })
     .url("JIRA_BASE_URL must be a URL, e.g. https://your-site.atlassian.net")
     .transform((u) => u.replace(/\/+$/, "")),
-  JIRA_EMAIL: z.string().email("JIRA_EMAIL must be your Atlassian account email"),
-  JIRA_API_TOKEN: z.string().min(10, "JIRA_API_TOKEN is missing or too short"),
+  JIRA_EMAIL: z.string({ error: "JIRA_EMAIL is not set" }).email("JIRA_EMAIL must be your Atlassian account email"),
+  JIRA_API_TOKEN: z.string({ error: "JIRA_API_TOKEN is not set" }).min(10, "JIRA_API_TOKEN is missing or too short"),
   JIRA_PROJECT_KEY: z
     .string()
     .regex(/^[A-Z][A-Z0-9_]+$/, "JIRA_PROJECT_KEY must be an uppercase project key")
@@ -31,10 +31,14 @@ export const loadJiraConfig = (env: NodeJS.ProcessEnv = process.env): JiraConfig
 /** LLM configuration (docs/09-llm-adapter.md). Any OpenAI-compatible endpoint. */
 export const LlmConfigSchema = z.object({
   LLM_BASE_URL: z
-    .string()
-    .url("LLM_BASE_URL must be a URL, e.g. https://generativelanguage.googleapis.com/v1beta/openai/"),
-  LLM_API_KEY: z.string().min(1, "LLM_API_KEY is missing"),
-  LLM_MODEL: z.string().min(1, "LLM_MODEL is missing (e.g. the Gemini Flash model name from AI Studio)"),
+    .string({ error: "LLM_BASE_URL is not set (e.g. https://generativelanguage.googleapis.com/v1beta/openai/)" })
+    .url("LLM_BASE_URL must be a URL"),
+  LLM_API_KEY: z
+    .string({ error: "LLM_API_KEY is not set (free key: https://aistudio.google.com → Get API key)" })
+    .min(1),
+  LLM_MODEL: z
+    .string({ error: "LLM_MODEL is not set. Run `npm run verify-llm` to list the models your key can use." })
+    .min(1),
   LLM_PROVIDER: z.string().optional(),
   LLM_RPM: z.coerce.number().int().min(0).default(8),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
@@ -64,3 +68,9 @@ export type AssessConfig = z.infer<typeof AssessConfigSchema>;
 
 export const loadAssessConfig = (env: NodeJS.ProcessEnv = process.env): AssessConfig =>
   AssessConfigSchema.parse(Object.fromEntries(Object.entries(env).filter(([, v]) => v !== "")));
+
+/** Just enough to reach the provider (used by `verify-llm` to list models before LLM_MODEL is chosen). */
+export const loadLlmConnection = (env: NodeJS.ProcessEnv = process.env) =>
+  LlmConfigSchema.pick({ LLM_BASE_URL: true, LLM_API_KEY: true }).parse(
+    Object.fromEntries(Object.entries(env).filter(([, v]) => v !== "")),
+  );

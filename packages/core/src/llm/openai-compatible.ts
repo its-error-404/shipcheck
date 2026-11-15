@@ -72,6 +72,13 @@ export class OpenAICompatibleClient implements LlmClient {
     this.trace = opts.trace ?? noopTrace;
   }
 
+  /** Model ids exposed by the provider's OpenAI-compatible /models endpoint. */
+  async listModels(): Promise<string[]> {
+    const ids: string[] = [];
+    for await (const m of this.client.models.list()) ids.push(m.id.replace(/^models\//, ""));
+    return ids.sort();
+  }
+
   async chat(req: ChatRequest): Promise<ChatResponse> {
     const maxRetries = this.opts.maxRetries ?? LLM_DEFAULTS.maxRetries;
     let waitedMs = 0;
