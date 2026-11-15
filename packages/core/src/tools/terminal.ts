@@ -116,13 +116,17 @@ export const recordDecision = defineTool({
       anomalies: a.anomalies ?? [],
     };
     const problems = ctx.ledger.validate(input, ctx.requirementKey);
-    const missing = ctx.ledger.missingCoverage(await requiredCoverage(ctx, ctx.requirementKey));
+    const missing = ctx.ledger.missingSteps(await requiredCoverage(ctx, ctx.requirementKey));
     if (missing.length) {
-      const labels = await Promise.all(
-        missing.map(async (k) => `${k} (${(await ctx.view.inScope(k))?.sourceId ?? "?"})`),
+      // Name each missing call exactly: small models repeat record_decision when told only "open AND read".
+      const calls = await Promise.all(
+        missing.map(async ({ key, steps }) => {
+          const src = (await ctx.view.inScope(key))?.sourceId;
+          return steps.map((tool) => `${tool}(ref="${key}")${src ? ` [${src}]` : ""}`).join(", ");
+        }),
       );
       problems.push(
-        `Investigation incomplete: open (get_issue) AND read the comments (get_comments) of every record linked from the requirement and their dependencies before deciding. Not yet done: ${labels.join(", ")}. Request them together in one turn.`,
+        `Investigation incomplete: every record linked from the requirement (and their dependencies) must be opened with get_issue AND have its comments read with get_comments before deciding. Still missing, call these now in one turn: ${calls.join(", ")}. Do not call record_decision again until they are done.`,
       );
     }
     if (problems.length)

@@ -27,7 +27,20 @@ export class EvidenceLedger {
 
   /** Required issues not yet opened and read, for the coverage gate. */
   missingCoverage(required: readonly string[]): string[] {
-    return required.filter((k) => !this.opened.has(k) || !this.commentsRead.has(k));
+    return this.missingSteps(required).map((m) => m.key);
+  }
+
+  /** The exact tool calls still needed per required issue, so a rejection can say precisely what to do. */
+  missingSteps(required: readonly string[]): { key: string; steps: ("get_issue" | "get_comments")[] }[] {
+    return required
+      .map((key) => ({
+        key,
+        steps: [
+          ...(this.opened.has(key) ? [] : (["get_issue"] as const)),
+          ...(this.commentsRead.has(key) ? [] : (["get_comments"] as const)),
+        ],
+      }))
+      .filter((m) => m.steps.length > 0);
   }
 
   recordIssue(issue: LedgerIssue): void {

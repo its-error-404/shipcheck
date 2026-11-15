@@ -205,6 +205,10 @@ describe("record_decision + ledger", () => {
     expect(r.content).toMatch(/Investigation incomplete/);
     expect(r.content).toMatch(/REC-9745/);
     expect(r.content).toMatch(/REC-6499/);
+    // Names the exact missing call per record: REQ-07 was opened but its comments were not read.
+    expect(r.content).toMatch(/get_comments\(ref="SHIP-\d+"\) \[REQ-07\]/);
+    expect(r.content).not.toMatch(/get_issue\(ref="SHIP-\d+"\) \[REQ-07\]/);
+    expect(r.content).toMatch(/get_issue\(ref="SHIP-\d+"\) \[REC-9745\], get_comments\(ref="SHIP-\d+"\) \[REC-9745\]/);
   });
   it("requires the dependency of a linked record too (2 hops: REQ-08 → REC-4076 → REC-9635)", async () => {
     const c = ctx("REQ-08");
@@ -216,7 +220,7 @@ describe("record_decision + ledger", () => {
       evidence: [],
       outstanding: ["x"],
     });
-    expect(r.content).toMatch(/Not yet done: .*REC-9635/);
+    expect(r.content).toMatch(/Still missing.*REC-9635/);
   });
   it("accepts a properly evidenced decision", async () => {
     const c = ctx("REQ-07");
