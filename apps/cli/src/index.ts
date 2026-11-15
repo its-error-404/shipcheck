@@ -150,61 +150,63 @@ program
 
 program
   .command("verify-llm")
-  .description("List models your LLM key can use and test tool calling with LLM_MODEL")
-  .action(async () => {
+  .description("List models your LLM key can use and test tool calling (LLM_MODEL, or several with --models)")
+  .option("-m, --models <ids>", "comma-separated model ids to probe, e.g. gemini-3.7-flash,gemini-3.6-flash")
+  .action(async (o: { models?: string }) => {
     const conn = loadLlmConnection();
-    const model = process.env.LLM_MODEL?.trim();
-    const probe = new OpenAICompatibleClient({
-      baseURL: conn.LLM_BASE_URL,
-      apiKey: conn.LLM_API_KEY,
-      model: model || "none",
-    });
-    const models = await probe.listModels().catch((e: Error) => {
+    const lister = new OpenAICompatibleClient({ baseURL: conn.LLM_BASE_URL, apiKey: conn.LLM_API_KEY, model: "none" });
+    const available = await lister.listModels().catch((e: Error) => {
       console.warn(`Could not list models: ${e.message}`);
       return [] as string[];
     });
-    if (models.length) {
-      const flash = models.filter((m) => /flash/i.test(m) && !/tts|live|audio|image|embed/i.test(m));
-      console.log(
-        `✓ Key works. ${models.length} models available${flash.length ? `; text "flash" models:\n  ${flash.join("\n  ")}` : ""}`,
-      );
+    if (available.length) {
+      const flash = available.filter((m) => /flash/i.test(m) && !/tts|live|audio|image|embed|omni/i.test(m));
+      console.log(`✓ Key works. ${available.length} models available; text "flash" models:\n  ${flash.join("\n  ")}`);
     }
-    if (!model) {
-      console.log(
-        "\nSet LLM_MODEL in .env to one of the models above (a Flash model is a good free-tier choice), then rerun.",
-      );
+    const candidates = (o.models ?? process.env.LLM_MODEL ?? "")
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
+    if (!candidates.length) {
+      console.log("\nSet LLM_MODEL in .env (or pass --models a,b,c) to test tool calling.");
       return;
     }
-    const cfg = loadLlmConfig();
-    const llm = new OpenAICompatibleClient({
-      baseURL: cfg.LLM_BASE_URL,
-      apiKey: cfg.LLM_API_KEY,
-      model: cfg.LLM_MODEL,
-      maxOutputTokens: cfg.LLM_MAX_OUTPUT_TOKENS,
-      reasoningEffort: cfg.LLM_REASONING_EFFORT,
-      maxRetries: 1,
-    });
-    const res = await llm.chat({
-      system: "You are a connectivity test. Always respond by calling the provided tool.",
-      messages: [{ role: "user", content: "Call the ping tool with message 'ok'." }],
-      tools: [
-        {
-          name: "ping",
-          description: "Connectivity check",
-          parameters: { type: "object", properties: { message: { type: "string" } }, required: ["message"] },
-        },
-      ],
-    });
-    if (res.toolCalls[0]?.name === "ping")
-      console.log(
-        `✓ ${cfg.LLM_MODEL} supports tool calling (${res.latencyMs} ms, ${res.usage.inputTokens} in / ${res.usage.outputTokens} out tokens)`,
-      );
-    else {
-      console.error(
-        `✗ ${cfg.LLM_MODEL} answered without calling the tool (finish: ${res.finishReason}). Choose another model.`,
-      );
-      process.exitCode = 1;
+    const cfg = { ...loadLlmConnection(), timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 60_000) };
+    const effort = process.env.LLM_REASONING_EFFORT || undefined;
+    console.log(`\nProbing ${candidates.length} model(s) with a tool call (timeout ${cfg.timeoutMs / 1000} s each):`);
+    const working: string[] = [];
+    for (const model of candidates) {
+      const llm = new OpenAICompatibleClient({
+        baseURL: cfg.LLM_BASE_URL,
+        apiKey: cfg.LLM_API_KEY,
+        model,
+        reasoningEffort: effort,
+        timeoutMs: cfg.timeoutMs,
+        maxRetries: 0,
+      });
+      try {
+        const res = await llm.chat({
+          system: "You are a connectivity test. Always respond by calling the provided tool.",
+          messages: [{ role: "user", content: "Call the ping tool with message 'ok'." }],
+          tools: [
+            {
+              name: "ping",
+              description: "Connectivity check",
+              parameters: { type: "object", properties: { message: { type: "string" } }, required: ["message"] },
+            },
+          ],
+        });
+        if (res.toolCalls[0]?.name === "ping") {
+          working.push(model);
+          console.log(`  ✓ ${model}: tool call OK in ${(res.latencyMs / 1000).toFixed(1)} s (served as ${res.model})`);
+        } else console.log(`  ✗ ${model}: answered without calling the tool`);
+      } catch (e) {
+        console.log(`  ✗ ${model}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 160)}`);
+      }
     }
+    if (working.length)
+      console.log(`\nUse one of: ${working.join(", ")} (set LLM_MODEL in .env; prefer the fastest non-preview).`);
+    else process.exitCode = 1;
   });
 
 program
