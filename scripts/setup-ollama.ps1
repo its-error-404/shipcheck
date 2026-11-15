@@ -84,7 +84,7 @@ if ($SkipEnvUpdate) {
     $line
   }
   $lines += ""
-  $lines += "# ── Local LLM via Ollama (written by scripts/setup-ollama.ps1) ──"
+  $lines += "# --- Local LLM via Ollama (written by scripts/setup-ollama.ps1) ---"
   foreach ($k in $new.Keys) { $lines += "$k=$($new[$k])" }
   Set-Content -Path $envFile -Value $lines -Encoding utf8
   Write-Host "  Updated .env (backup: .env.bak). Previous LLM lines are kept as comments."
