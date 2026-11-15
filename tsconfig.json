@@ -13,7 +13,7 @@
     "noEmit": true,
     "types": ["node"],
     "paths": {
-      "@tyn/core": ["./packages/core/src/index.ts"]
+      "@shipcheck/core": ["./packages/core/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "packages/*/test", "apps/*/src"]

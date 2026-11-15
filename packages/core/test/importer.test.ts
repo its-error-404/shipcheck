@@ -8,7 +8,7 @@ import { DATASET_PATH, fakeClient } from "./helpers";
 const freshImport = async (dataset?: Dataset) => {
   const ds = dataset ?? (await loadDataset(DATASET_PATH));
   const ctx = fakeClient();
-  const report = await new Importer(ctx.jira, ds, { projectKey: "TYN", concurrency: 8 }).run();
+  const report = await new Importer(ctx.jira, ds, { projectKey: "SHIP", concurrency: 8 }).run();
   return { ds, ...ctx, report };
 };
 
@@ -22,7 +22,7 @@ describe("Importer (full dataset against fake Jira)", () => {
     expect(report.statuses.unmatched).toBe(0);
     expect(fake.issues.size).toBe(400);
 
-    const v = await verifyImport(jira, ds, "TYN");
+    const v = await verifyImport(jira, ds, "SHIP");
     expect(v.mismatches).toEqual([]);
     expect(v.ok).toBe(true);
     expect(v.counts.matchingComments).toBe(2059);
@@ -32,7 +32,7 @@ describe("Importer (full dataset against fake Jira)", () => {
   it("is idempotent: a second run creates nothing", async () => {
     const { ds, jira, fake } = await freshImport();
     const before = fake.requests.length;
-    const second = await new Importer(jira, ds, { projectKey: "TYN" }).run();
+    const second = await new Importer(jira, ds, { projectKey: "SHIP" }).run();
     expect(second.issues.created).toBe(0);
     expect(second.comments.created).toBe(0);
     expect(second.links.created).toBe(0);
@@ -51,22 +51,22 @@ describe("Importer (full dataset against fake Jira)", () => {
       status: 400,
       times: 1e9,
     });
-    const first = await new Importer(jira, ds, { projectKey: "TYN" }).run();
+    const first = await new Importer(jira, ds, { projectKey: "SHIP" }).run();
     expect(first.comments.created).toBe(500);
     expect(first.errors.length).toBeGreaterThan(0);
 
     (fake as any).faults = []; // Jira is back
-    const second = await new Importer(jira, ds, { projectKey: "TYN" }).run();
+    const second = await new Importer(jira, ds, { projectKey: "SHIP" }).run();
     expect(second.errors).toEqual([]);
     expect(second.comments.created).toBe(2059 - 500);
-    const v = await verifyImport(jira, ds, "TYN");
+    const v = await verifyImport(jira, ds, "SHIP");
     expect(v.ok).toBe(true);
   });
 
   it("dry-run writes nothing", async () => {
     const ds = await loadDataset(DATASET_PATH);
     const { fake, jira } = fakeClient();
-    const r = await new Importer(jira, ds, { projectKey: "TYN", dryRun: true }).run();
+    const r = await new Importer(jira, ds, { projectKey: "SHIP", dryRun: true }).run();
     expect(r.dryRun).toBe(true);
     expect(fake.issues.size).toBe(0);
   });
@@ -75,9 +75,9 @@ describe("Importer (full dataset against fake Jira)", () => {
     const ds = await loadDataset(DATASET_PATH);
     const { fake, jira } = fakeClient();
     fake.seedIssue("Someone else's ticket", ["other-team"]);
-    const r = await new Importer(jira, ds, { projectKey: "TYN" }).run();
+    const r = await new Importer(jira, ds, { projectKey: "SHIP" }).run();
     expect(r.issues.created).toBe(400);
-    expect((await verifyImport(jira, ds, "TYN")).ok).toBe(true);
+    expect((await verifyImport(jira, ds, "SHIP")).ok).toBe(true);
   });
 
   it("verify-import detects tampering", async () => {
@@ -85,7 +85,7 @@ describe("Importer (full dataset against fake Jira)", () => {
     const victim = [...fake.issues.values()][5]!;
     victim.comments.pop();
     victim.status = "To Do";
-    const v = await verifyImport(jira, ds, "TYN");
+    const v = await verifyImport(jira, ds, "SHIP");
     expect(v.ok).toBe(false);
     expect(v.mismatches.join("\n")).toMatch(/comments, expected/);
   });
@@ -93,6 +93,6 @@ describe("Importer (full dataset against fake Jira)", () => {
   it("fails preflight clearly when the project is wrong", async () => {
     const ds = await loadDataset(DATASET_PATH);
     const { jira } = fakeClient();
-    await expect(new Importer(jira, ds, { projectKey: "NOPE" }).run()).rejects.toThrow(/Projects you can access: TYN/);
+    await expect(new Importer(jira, ds, { projectKey: "NOPE" }).run()).rejects.toThrow(/Projects you can access: SHIP/);
   });
 });

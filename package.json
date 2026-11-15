@@ -1,5 +1,5 @@
 {
-  "name": "tyn-release-agent",
+  "name": "shipcheck",
   "private": true,
   "version": "0.1.0",
   "description": "Tool-using AI agent that assesses Jira release readiness",

@@ -18,7 +18,7 @@ import {
   newRunId,
   renderEval,
   renderReport,
-} from "@tyn/core";
+} from "@shipcheck/core";
 import { jiraHttp } from "../shared";
 import { AssessProgress } from "../progress";
 import { banner, c, decision, duration, fail, info, ok, out, table, warn } from "../ui";

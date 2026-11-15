@@ -2,7 +2,7 @@
  * Live progress for `assess`, rendered from trace events (presentation is
  * separate from the agent: the orchestrator only emits events).
  */
-import { TRACE_EVENTS, type TraceEvent, type TraceSink } from "@tyn/core";
+import { TRACE_EVENTS, type TraceEvent, type TraceSink } from "@shipcheck/core";
 import { SYMBOL, c, decision, detail, duration, info, ok, out, step, warn } from "./ui";
 
 const TOTAL_STEPS = 4;

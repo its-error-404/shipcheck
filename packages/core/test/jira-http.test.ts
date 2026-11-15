@@ -47,7 +47,7 @@ describe("Jira HTTP retry policy", () => {
     const { fake, jira } = fakeClient();
     fake.seedIssue("a", ["scope"]);
     fake.fail({ match: (m, p) => p.endsWith("/search/jql"), status: 502, times: 1 });
-    expect(await jira.searchAll('project = "TYN" AND labels = "scope"', ["summary"])).toHaveLength(1);
+    expect(await jira.searchAll('project = "SHIP" AND labels = "scope"', ["summary"])).toHaveLength(1);
   });
 
   it("never retries 401 and explains the fix", async () => {
@@ -61,7 +61,7 @@ describe("Jira HTTP retry policy", () => {
 
   it("maps 404 to JiraNotFoundError", async () => {
     const { jira } = fakeClient();
-    await expect(jira.getIssue("TYN-999", ["summary"])).rejects.toBeInstanceOf(JiraNotFoundError);
+    await expect(jira.getIssue("SHIP-999", ["summary"])).rejects.toBeInstanceOf(JiraNotFoundError);
   });
 
   it("gives up after max retries", async () => {
@@ -84,7 +84,7 @@ describe("search paging", () => {
     const { fake, jira } = fakeClient();
     for (let i = 0; i < 250; i++) fake.seedIssue(`issue ${i}`, ["scope"]);
     fake.seedIssue("other", ["unrelated"]);
-    const all = await jira.searchAll('project = "TYN" AND labels = "scope"', ["summary"]);
+    const all = await jira.searchAll('project = "SHIP" AND labels = "scope"', ["summary"]);
     expect(all).toHaveLength(250);
     expect(fake.requests.filter((r) => r.path.endsWith("/search/jql"))).toHaveLength(3);
   });

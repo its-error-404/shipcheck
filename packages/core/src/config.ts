@@ -15,7 +15,7 @@ export const JiraConfigSchema = z.object({
   JIRA_PROJECT_KEY: z
     .string()
     .regex(/^[A-Z][A-Z0-9_]+$/, "JIRA_PROJECT_KEY must be an uppercase project key")
-    .default("TYN"),
+    .default("SHIP"),
   JIRA_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(4),
 });
 export type JiraConfig = z.infer<typeof JiraConfigSchema>;

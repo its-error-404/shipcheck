@@ -19,7 +19,7 @@ let keyOf: (s: string) => string;
 beforeAll(async () => {
   ds = await loadDataset(DATASET_PATH);
   const { jira } = fakeClient();
-  const rep = await new Importer(jira, ds, { projectKey: "TYN", concurrency: 8 }).run();
+  const rep = await new Importer(jira, ds, { projectKey: "SHIP", concurrency: 8 }).run();
   reader = jira;
   keyOf = (s) => rep.map[s]!;
 });
@@ -28,7 +28,7 @@ const budget: Budget = { maxTurns: 10, maxToolCalls: 20, maxInputTokens: 100_000
 const setup = (llm: ScriptedLlm, b: Partial<Budget> = {}) => {
   const trace = new MemoryTrace();
   const ctx = {
-    view: new ScopedJiraView(reader, "TYN", ds.dataset_label),
+    view: new ScopedJiraView(reader, "SHIP", ds.dataset_label),
     target: ds.target,
     ledger: new EvidenceLedger(),
     trace,

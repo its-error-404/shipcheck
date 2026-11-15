@@ -49,7 +49,7 @@ export class FakeJira {
   private commentSeq = 50000;
   private clock = Date.parse("2026-11-15T00:00:00Z");
 
-  constructor(readonly projectKey = "TYN") {}
+  constructor(readonly projectKey = "SHIP") {}
 
   /** Inject failures for matching requests. */
   fail(fault: Fault): void {

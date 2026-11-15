@@ -18,7 +18,7 @@ let keyOf: (sid: string) => string;
 beforeAll(async () => {
   ds = await loadDataset(DATASET_PATH);
   const { fake, jira } = fakeClient();
-  const report = await new Importer(jira, ds, { projectKey: "TYN", concurrency: 8 }).run();
+  const report = await new Importer(jira, ds, { projectKey: "SHIP", concurrency: 8 }).run();
   // An unrelated ticket outside the scope, linked to REQ-01: must stay invisible.
   const outsider = fake.seedIssue("[OUT-1] other team ticket", ["other-team"]);
   fake.links.push({ id: "1", type: "Relates", outward: outsider.key, inward: report.map["REQ-01"]! });
@@ -28,7 +28,7 @@ beforeAll(async () => {
 
 const ctx = (requirement?: string): ToolContext => {
   return {
-    view: new ScopedJiraView(reader, "TYN", ds.dataset_label),
+    view: new ScopedJiraView(reader, "SHIP", ds.dataset_label),
     target: ds.target,
     ledger: new EvidenceLedger(),
     trace: noopTrace,
@@ -307,7 +307,9 @@ describe("record_decision usability for small models", () => {
       explanation: "Superseding retest passes 28/28 on the target build.",
       evidence: [{ issue_key: "REC-9745", stance: "supports_pass", why: "retest" }],
     });
-    expect(r.content).toMatch(/Comment ids you have read on TYN-\d+: .*\d+ \(#\d+, Priya Nair \/ QA Lead: "REDACT-901/);
+    expect(r.content).toMatch(
+      /Comment ids you have read on SHIP-\d+: .*\d+ \(#\d+, Priya Nair \/ QA Lead: "REDACT-901/,
+    );
   });
 });
 
@@ -318,7 +320,7 @@ describe("check_scope context for the prompt", () => {
     const id = [...c.ledger.comments.values()].find((x) => x.body.includes("EVAL-55 completed"))!.id;
     const r = await run(c, "check_scope", { ref: "REC-4323", comment_id: id });
     expect(r.content).toMatch(/Build\/deployment .*MATCHES the target/);
-    expect(r.content).toMatch(/Other comments on TYN-\d+ state: comment \d+ .*prompt p6/);
+    expect(r.content).toMatch(/Other comments on SHIP-\d+ state: comment \d+ .*prompt p6/);
   });
   it("tells the model the prompt is irrelevant to a non-prompt criterion when nowhere stated (REG-804)", async () => {
     const c = ctx();

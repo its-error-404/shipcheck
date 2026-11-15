@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { TRACE_EVENTS, createJiraHttp, loadJiraConfig, type TraceSink } from "@tyn/core";
+import { TRACE_EVENTS, createJiraHttp, loadJiraConfig, type TraceSink } from "@shipcheck/core";
 import { warn } from "./ui";
 
 export const jiraHttp = (trace?: TraceSink) => {

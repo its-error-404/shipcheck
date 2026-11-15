@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { OpenAICompatibleClient, loadLlmConfig, loadLlmConnection } from "@tyn/core";
+import { OpenAICompatibleClient, loadLlmConfig, loadLlmConnection } from "@shipcheck/core";
 import { banner, c, fail, info, ok, out, step } from "../ui";
 
 export const registerLlmCommands = (program: Command) => {

@@ -1,4 +1,4 @@
-# TYN Release Evidence Agent
+# Shipcheck
 
 A tool-using AI agent that investigates Jira and produces an evidence-backed **release-readiness report**: a `PASS` / `FAIL` / `INSUFFICIENT_EVIDENCE` decision per requirement and an overall `BLOCKED` / `NEEDS_REVIEW` / `READY` decision for the release.
 

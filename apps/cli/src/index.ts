@@ -11,7 +11,7 @@ import { registerLlmCommands } from "./commands/llm";
 import { errorBlock, hintFor } from "./ui";
 
 const program = new Command()
-  .name("tyn")
+  .name("shipcheck")
   .description("Jira release-evidence agent: importer, assessment and evaluation")
   .option("--no-color", "disable coloured output");
 

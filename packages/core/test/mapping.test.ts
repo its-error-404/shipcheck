@@ -77,8 +77,8 @@ describe("record mapping", () => {
 
 describe("JQL scope", () => {
   it("always wraps the inner clause in the code-enforced scope", () => {
-    expect(scopedJql("TYN", "tyn-release-assessment-v2", 'labels = "x" OR text ~ "y"')).toBe(
-      'project = "TYN" AND labels = "tyn-release-assessment-v2" AND (labels = "x" OR text ~ "y")',
+    expect(scopedJql("SHIP", "tyn-release-assessment-v2", 'labels = "x" OR text ~ "y"')).toBe(
+      'project = "SHIP" AND labels = "tyn-release-assessment-v2" AND (labels = "x" OR text ~ "y")',
     );
     expect(jqlString('a"b\\c')).toBe('"a\\"b\\\\c"');
   });

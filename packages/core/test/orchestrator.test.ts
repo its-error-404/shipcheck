@@ -22,7 +22,7 @@ let reader: JiraReader;
 beforeAll(async () => {
   const ds = await loadDataset(DATASET_PATH);
   const { jira } = fakeClient();
-  await new Importer(jira, ds, { projectKey: "TYN", concurrency: 8 }).run();
+  await new Importer(jira, ds, { projectKey: "SHIP", concurrency: 8 }).run();
   reader = jira;
 });
 
@@ -92,7 +92,7 @@ const run = (llm: ScriptedLlm, extra: Partial<Parameters<typeof assess>[0]> = {}
     llm,
     trace,
     runId: "test",
-    projectKey: "TYN",
+    projectKey: "SHIP",
     scopeLabel: "tyn-release-assessment-v2",
     release: "R2.4",
     ...extra,
@@ -155,7 +155,7 @@ describe("orchestrator end-to-end (fake Jira + scripted model through real tools
     expect(result.overall?.decision).toBe("NEEDS_REVIEW");
     const md = renderReport(result, buildMetrics(result, trace.events), { siteUrl: "https://x.atlassian.net" });
     expect(md).toMatch(/Overall decision: 🟡 NEEDS_REVIEW/);
-    expect(md).toMatch(/\[TYN-\d+\]\(https:\/\/x\.atlassian\.net\/browse\/TYN-\d+\) \(REQ-01\)/);
+    expect(md).toMatch(/\[SHIP-\d+\]\(https:\/\/x\.atlassian\.net\/browse\/SHIP-\d+\) \(REQ-01\)/);
     expect(md).toMatch(/Execution metrics/);
   });
 

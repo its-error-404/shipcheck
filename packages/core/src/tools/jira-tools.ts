@@ -90,7 +90,7 @@ export const searchIssues = defineTool({
 export const getIssue = defineTool({
   name: "get_issue",
   description:
-    "Open one in-scope issue by Jira key (TYN-12) or source ID (REQ-04 / REC-6024). Returns source metadata, the original description, " +
+    "Open one in-scope issue by Jira key (SHIP-12) or source ID (REQ-04 / REC-6024). Returns source metadata, the original description, " +
     "and links tagged OUTGOING (declared by this record) or INCOMING (declared by the other record). Comments are NOT included: use get_comments.",
   schema: z.object({ ref: z.string().describe("Jira key or source ID") }),
   run: (a, ctx) =>

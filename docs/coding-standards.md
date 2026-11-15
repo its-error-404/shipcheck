@@ -15,7 +15,7 @@ packages/core/src/
   llm/         Provider-neutral types, adapters, rate limiter, scripted test double
   agent/       Agent loop (orchestrator, prompts, report added in Modules 11–14)
   testing/     Fake Jira (in-memory + HTTP) for tests and offline demos
-apps/cli/      Thin CLI over @tyn/core: commands/ (one module per command), ui.ts (styling), progress.ts (live progress from trace events)
+apps/cli/      Thin CLI over @shipcheck/core: commands/ (one module per command), ui.ts (styling), progress.ts (live progress from trace events)
 ```
 
 **Rule of placement:** a type, constant or helper used by more than one module lives in `models/`, `constants/` or `utils/`. One used by a single module stays next to its code (e.g. the description markers in `import/mapping.ts`).

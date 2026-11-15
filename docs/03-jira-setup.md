@@ -13,7 +13,7 @@ Provide a clean, dedicated Jira project that the importer writes into and the ag
 A dedicated free Jira Cloud site (`<name>.atlassian.net`). The free plan includes the full REST API v3 and requires no card.
 **Rejected:** Jira Data Center (paid, heavy, not requested); an employer's Jira (the brief forbids company systems).
 
-### 2.2 Project: company-managed, Scrum template, key `TYN`
+### 2.2 Project: company-managed, Scrum template, key `SHIP`
 
 |               | Company-managed ✅                        | Team-managed                          |
 | ------------- | ----------------------------------------- | ------------------------------------- |
@@ -66,7 +66,7 @@ Every agent query is built by code as `project = <KEY> AND labels = "<dataset_la
 ## 3. Setup steps (reviewer reproducible, free)
 
 1. **Jira site**: atlassian.com → Jira → _Get it free_; choose a site name.
-2. **Project**: Scrum template, company-managed (or team-managed Kanban), key `TYN` (any key works; it's configurable).
+2. **Project**: Scrum template, company-managed (or team-managed Kanban), key `SHIP` (any key works; it's configurable).
 3. **API token**: id.atlassian.com/manage-profile/security/api-tokens → _Create API token_; copy it once.
 4. **LLM key**: aistudio.google.com → _Get API key_ (free tier, no billing). Optional backup: console.groq.com.
 5. Copy `.env.example` to `.env` and fill in the values. Never commit `.env`.

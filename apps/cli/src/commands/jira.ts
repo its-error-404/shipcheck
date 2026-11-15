@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { Importer, JiraReader, JiraWriter, loadDataset, verifyImport } from "@tyn/core";
+import { Importer, JiraReader, JiraWriter, loadDataset, verifyImport } from "@shipcheck/core";
 import { jiraHttp, retryLogger, writeJson } from "../shared";
 import { banner, c, duration, fail, info, ok, out, step, table, warn } from "../ui";
 

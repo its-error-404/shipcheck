@@ -72,7 +72,7 @@ The importer receives a `JiraWriter`; the agent's tools are constructed with a `
 
 ## 6. JQL scope
 
-`scopedJql(project, label, inner?)` → `project = "TYN" AND labels = "<scope>" AND (<inner>)`. Literals are quoted and escaped by `jqlString`. All scoping is built in code.
+`scopedJql(project, label, inner?)` → `project = "SHIP" AND labels = "<scope>" AND (<inner>)`. Literals are quoted and escaped by `jqlString`. All scoping is built in code.
 
 ## 7. Testing approach
 

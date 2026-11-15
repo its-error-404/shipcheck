@@ -29,5 +29,5 @@ export const startFakeJiraServer = (port: number, fake = new FakeJira()) => {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = Number(process.argv[2] ?? 4010);
-  startFakeJiraServer(port).then(() => console.log(`Fake Jira listening on http://localhost:${port} (project TYN)`));
+  startFakeJiraServer(port).then(() => console.log(`Fake Jira listening on http://localhost:${port} (project SHIP)`));
 }

@@ -31,7 +31,7 @@ The tools are the model's only window into Jira. Each is small, read-only, scope
 
 ### `search_issues({ text?, source_ids?, kind?, release?, limit≤25 })`
 
-Code builds the JQL from structured parameters. Output rows: `TYN-57 · REC-9745 · evidence · filed R2.4 · Jira status Done · "summary"`. The description reminds the model that the _filed_ release is not necessarily the scope of a result.
+Code builds the JQL from structured parameters. Output rows: `SHIP-57 · REC-9745 · evidence · filed R2.4 · Jira status Done · "summary"`. The description reminds the model that the _filed_ release is not necessarily the scope of a result.
 **Rejected:** raw JQL from the model (syntax errors waste turns; injection surface).
 
 ### `get_issue({ ref })`
@@ -39,8 +39,8 @@ Code builds the JQL from structured parameters. Output rows: `TYN-57 · REC-9745
 `ref` is a Jira key or a source ID. Returns source metadata (kind, filed release, recorded status, Jira status), the original description, and links:
 
 ```
-→ OUTGOING TYN-342 · REC-4076 · "…" (declared by this record)
-← INCOMING TYN-360 · MANIFEST · "…" (declared by the other record)
+→ OUTGOING SHIP-342 · REC-4076 · "…" (declared by this record)
+← INCOMING SHIP-360 · MANIFEST · "…" (declared by the other record)
 ```
 
 Direction comes from the description's "Source links (declared by this record)" line (Module 4). Comments are not included, only their count, so the model chooses whether to read them.
