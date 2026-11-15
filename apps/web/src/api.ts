@@ -1,33 +1,23 @@
-/** Thin client for the REST API (apps/server/src/routes/runs.ts). */
+/** Thin client for the REST API (apps/server/src/routes/runs.ts), on axios like the Jira client. */
+import axios, { type AxiosError } from "axios";
 import type { ConfigStatus, LiveStatus, Msg, RunDetail, RunSummary, SessionInfo } from "./types";
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
+const http = axios.create({ baseURL: "/api", timeout: 30_000 });
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch(`/api${path}`, {
-    ...init,
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
-  });
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new ApiError(body.error ?? `Request failed (${res.status})`, res.status);
-  return body as T;
-};
+/** Surface the server's `{ error }` message instead of axios' generic one. */
+http.interceptors.response.use(undefined, (err: AxiosError<{ error?: string }>) =>
+  Promise.reject(new Error(err.response?.data?.error ?? err.message)),
+);
+
+const get = async <T>(path: string): Promise<T> => (await http.get<T>(path)).data;
+const id = encodeURIComponent;
 
 export const api = {
-  config: () => request<ConfigStatus>("/config"),
-  live: () => request<LiveStatus>("/live"),
-  runs: () => request<RunSummary[]>("/runs"),
-  run: (id: string) => request<RunDetail>(`/runs/${encodeURIComponent(id)}`),
-  transcript: (id: string, req: string) =>
-    request<Msg[]>(`/runs/${encodeURIComponent(id)}/transcripts/${encodeURIComponent(req)}`),
-  reportUrl: (id: string) => `/api/runs/${encodeURIComponent(id)}/report.md`,
-  start: (body: { only?: string[]; resumeFrom?: string }) =>
-    request<SessionInfo>("/runs", { method: "POST", body: JSON.stringify(body) }),
+  config: () => get<ConfigStatus>("/config"),
+  live: () => get<LiveStatus>("/live"),
+  runs: () => get<RunSummary[]>("/runs"),
+  run: (runId: string) => get<RunDetail>(`/runs/${id(runId)}`),
+  transcript: (runId: string, req: string) => get<Msg[]>(`/runs/${id(runId)}/transcripts/${id(req)}`),
+  reportUrl: (runId: string) => `/api/runs/${id(runId)}/report.md`,
+  start: async (body: { only?: string[]; resumeFrom?: string }) => (await http.post<SessionInfo>("/runs", body)).data,
 };
