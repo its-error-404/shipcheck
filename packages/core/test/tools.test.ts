@@ -250,6 +250,20 @@ describe("record_decision + ledger", () => {
     expect(r.content).toMatch(/different scope: comment \d+: prompt p6 \(target p7\)/);
     expect(r.content).toMatch(/INSUFFICIENT_EVIDENCE/);
   });
+  it("rejects a PASS backed only by a result on another prompt (REQ-03: 96.2% on p6, target p7)", async () => {
+    const c = ctx("REQ-03");
+    await coverAll(c, "REQ-03");
+    const id = await commentWith(c, "REC-4323", "EVAL-55 completed");
+    await run(c, "check_scope", { ref: "REC-4323", comment_id: id });
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-03",
+      decision: "PASS",
+      explanation: "EVAL-55 reached 96.2 percent accuracy in production on the target commit.",
+      evidence: [{ issue_key: "REC-4323", comment_id: id, stance: "supports_pass", why: "above 90 percent" }],
+    });
+    expect(r.isError).toBe(true);
+    expect(r.content).toMatch(/cited for PASS was recorded on a different scope: comment \d+: prompt p6 \(target p7\)/);
+  });
   it("accepts a FAIL backed by a failure recorded on the target build (REQ-02: retest ISO-318)", async () => {
     const c = ctx("REQ-02");
     await coverAll(c, "REQ-02");

@@ -17,18 +17,20 @@ export interface Plan {
 
 /**
  * Manifest rule: results must match the target build, and the deployed prompt for
- * prompt-quality criteria. If every result the model cites for a FAIL explicitly
- * names a different scope, the failure belongs to another build or prompt, so the
- * FAIL is rejected. Comments that state no scope (notes, claims) are not results
- * and are ignored here; fields a result does not state are not held against it.
- * As in check_scope, a prompt stated elsewhere on the same issue applies to its results.
+ * prompt-quality criteria. If every result the model cites for a PASS (or a FAIL)
+ * explicitly names a different scope, it says nothing about the target, so the
+ * decision is rejected. Comments that state no scope (notes, claims) are not
+ * results and are ignored here; fields a result does not state are not held
+ * against it. As in check_scope, a prompt stated elsewhere on the same issue
+ * applies to its results.
  */
-const outOfScopeFailure = async (
+const outOfScopeResult = async (
   ctx: ToolContext,
   input: DecisionInput,
   reqKey: string,
 ): Promise<string | undefined> => {
-  if (input.decision !== "FAIL" || !ctx.target) return undefined;
+  if (input.decision === "INSUFFICIENT_EVIDENCE" || !ctx.target) return undefined;
+  const stance = input.decision === "PASS" ? "supports_pass" : "supports_fail";
   const target = ctx.target;
   const requirement = await ctx.view.getIssue(reqKey);
   const promptMatters = /\bprompt\b/i.test(parseCriterion(requirement.description) ?? requirement.summary);
@@ -36,7 +38,7 @@ const outOfScopeFailure = async (
 
   const results: { id: string; mismatched: string[] }[] = [];
   for (const e of input.evidence) {
-    const c = e.stance === "supports_fail" && e.comment_id ? ctx.ledger.comments.get(e.comment_id) : undefined;
+    const c = e.stance === stance && e.comment_id ? ctx.ledger.comments.get(e.comment_id) : undefined;
     if (!c) continue;
     const scope = new Map(checkScopeText(c.body, target).fields.map((f) => [f.field, f]));
     if (promptMatters && scope.get("prompt")?.status === "not_stated") {
@@ -60,11 +62,11 @@ const outOfScopeFailure = async (
     });
   }
   if (!results.length || results.some((r) => r.mismatched.length === 0)) return undefined;
-  return `Every result you cited for FAIL was recorded on a different scope: ${results
+  return `Every result you cited for ${input.decision} was recorded on a different scope: ${results
     .map((r) => `comment ${r.id}: ${r.mismatched.join(", ")}`)
     .join(
       "; ",
-    )}. A result on another build or prompt says nothing about the target. Cite a failure recorded on the target, or decide INSUFFICIENT_EVIDENCE if no applicable result exists.`;
+    )}. A result on another build or prompt says nothing about the target. Cite a result recorded on the target, or decide INSUFFICIENT_EVIDENCE if no applicable result exists.`;
 };
 
 export const submitPlan = defineTool({
@@ -170,7 +172,7 @@ export const recordDecision = defineTool({
       anomalies: a.anomalies ?? [],
     };
     const problems = ctx.ledger.validate(input, ctx.requirementKey);
-    const scopeProblem = await outOfScopeFailure(ctx, input, ctx.requirementKey);
+    const scopeProblem = await outOfScopeResult(ctx, input, ctx.requirementKey);
     if (scopeProblem) problems.push(scopeProblem);
     const missing = ctx.ledger.missingSteps(await requiredCoverage(ctx, ctx.requirementKey));
     if (missing.length) {
