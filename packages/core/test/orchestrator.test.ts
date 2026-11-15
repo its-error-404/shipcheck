@@ -224,3 +224,18 @@ describe("orchestrator end-to-end (fake Jira + scripted model through real tools
     expect(transcript[0].role).toBe("user");
   });
 });
+
+describe("--only (quick demo)", () => {
+  it("investigates only the selected requirements and marks the run partial", async () => {
+    const { result } = await run(policy(), { only: ["REQ-05", "req-08"] });
+    expect(result.status).toBe("COMPLETED");
+    expect(result.requirements.map((r) => r.sourceId)).toEqual(["REQ-05", "REQ-08"]);
+    expect(result.partial).toEqual({ selected: ["REQ-05", "REQ-08"], total: 12 });
+    expect(renderReport(result)).toMatch(/Partial run:.*not a release decision/);
+  });
+  it("rejects unknown ids with the list of valid ones", async () => {
+    const { result } = await run(policy(), { only: ["REQ-99"] });
+    expect(result.status).toBe("ABORTED");
+    expect(result.abortReason).toMatch(/REQ-99 not among the manifest's requirements \(REQ-01/);
+  });
+});

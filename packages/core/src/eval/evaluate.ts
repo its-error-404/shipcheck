@@ -40,18 +40,21 @@ export interface EvalResult {
 
 export const evaluateRun = (run: AssessmentResult, expected: Expected): EvalResult => {
   const bySource = new Map(run.requirements.map((r) => [r.sourceId ?? r.key, r]));
-  const rows: EvalRow[] = Object.entries(expected.requirements).map(([id, exp]) => {
-    const got = bySource.get(id);
-    return {
-      requirement: id,
-      expected: exp.decision,
-      actual: got?.decision ?? "MISSING",
-      match: got?.decision === exp.decision,
-      status: got?.status ?? "missing",
-      anomaliesFlagged: got?.anomalies.length ?? 0,
-      keyEvidence: exp.key_evidence,
-    };
-  });
+  const scope = run.partial ? new Set(run.partial.selected) : undefined;
+  const rows: EvalRow[] = Object.entries(expected.requirements)
+    .filter(([id]) => !scope || scope.has(id))
+    .map(([id, exp]) => {
+      const got = bySource.get(id);
+      return {
+        requirement: id,
+        expected: exp.decision,
+        actual: got?.decision ?? "MISSING",
+        match: got?.decision === exp.decision,
+        status: got?.status ?? "missing",
+        anomaliesFlagged: got?.anomalies.length ?? 0,
+        keyEvidence: exp.key_evidence,
+      };
+    });
   const criticalErrors = rows
     .filter(
       (r) =>
@@ -65,11 +68,13 @@ export const evaluateRun = (run: AssessmentResult, expected: Expected): EvalResu
     runId: run.runId,
     model: run.model,
     promptVersion: run.promptVersion,
-    overall: {
-      expected: expected.overall,
-      actual: run.overall?.decision ?? run.status,
-      match: run.overall?.decision === expected.overall,
-    },
+    overall: run.partial
+      ? { expected: "n/a (partial run)", actual: run.overall?.decision ?? run.status, match: true }
+      : {
+          expected: expected.overall,
+          actual: run.overall?.decision ?? run.status,
+          match: run.overall?.decision === expected.overall,
+        },
     correct,
     total: rows.length,
     accuracy: rows.length ? correct / rows.length : 0,

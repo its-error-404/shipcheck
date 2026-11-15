@@ -57,7 +57,17 @@ export const renderReport = (r: AssessmentResult, metrics?: RunMetrics, opts: Re
       "",
     );
   } else if (r.overall) {
-    push(`## Overall decision: ${OVERALL_BADGE[r.overall.decision]}`, "", r.overall.reason, "");
+    if (r.partial)
+      push(
+        `> **Partial run:** ${r.partial.selected.length} of ${r.partial.total} requirements assessed (${r.partial.selected.join(", ")}). The decision below covers only these and is **not a release decision**.`,
+        "",
+      );
+    push(
+      `## Overall decision${r.partial ? " (partial)" : ""}: ${OVERALL_BADGE[r.overall.decision]}`,
+      "",
+      r.overall.reason,
+      "",
+    );
     push(
       `Rule applied (computed in code, not by the model): any mandatory FAIL → BLOCKED; otherwise any INSUFFICIENT_EVIDENCE → NEEDS_REVIEW; otherwise READY.`,
       "",

@@ -53,6 +53,8 @@ export interface AssessOptions extends AssessmentRequest {
   budgets?: { discovery?: Partial<Budget>; investigation?: Partial<Budget> };
   /** Previously decided results to reuse (resume after a quota stop). Keyed by Jira key. */
   resume?: ReadonlyMap<string, RequirementResult>;
+  /** Assess only these requirements (source IDs like REQ-04, or Jira keys); discovery still runs. For quick demos. */
+  only?: readonly string[];
   /** Called as soon as each requirement finishes (used to persist results incrementally). */
   onRequirement?: (result: RequirementResult, transcript?: AgentRunResult<unknown>["transcript"]) => Promise<void>;
   log?: (message: string) => void;
@@ -182,8 +184,28 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
       `Discovery did not produce a valid plan (${discovery.stopReason}${discovery.error ? `: ${discovery.error}` : ""}).`,
     );
   const plan = discovery.terminal;
+  if (o.only?.length) {
+    const wanted = new Set(o.only.map((x) => x.trim().toUpperCase()));
+    const selected = plan.requirements.filter(
+      (r) => wanted.has(r.key.toUpperCase()) || wanted.has((r.sourceId ?? "").toUpperCase()),
+    );
+    const known = new Set(plan.requirements.flatMap((r) => [r.key.toUpperCase(), (r.sourceId ?? "").toUpperCase()]));
+    const unknown = [...wanted].filter((w) => !known.has(w));
+    if (unknown.length || !selected.length)
+      return abort(
+        `--only: ${unknown.join(", ") || "nothing"} not among the manifest's requirements (${plan.requirements.map((r) => r.sourceId ?? r.key).join(", ")}).`,
+      );
+    result.partial = { selected: selected.map((r) => r.sourceId ?? r.key), total: plan.requirements.length };
+    plan.requirements = selected;
+  }
   log(`  manifest ${plan.manifestKey} · ${plan.requirements.length} requirements`);
-  o.trace.emit({ type: TRACE_EVENTS.runPhase, phase: "plan", manifestKey: plan.manifestKey, manifestSourceId: plan.manifestSourceId, requirements: plan.requirements.length });
+  o.trace.emit({
+    type: TRACE_EVENTS.runPhase,
+    phase: "plan",
+    manifestKey: plan.manifestKey,
+    manifestSourceId: plan.manifestSourceId,
+    requirements: plan.requirements.length,
+  });
 
   // ── Phase 2: target + rules from the manifest (code, not the model) ────
   phase("manifest");

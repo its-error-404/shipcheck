@@ -81,6 +81,8 @@ export interface AssessmentResult {
   target?: Target;
   overall?: OverallResult;
   requirements: RequirementResult[];
+  /** Set when only some requirements were assessed (--only): the overall decision is then not a release decision. */
+  partial?: { selected: string[]; total: number };
   discovery?: AgentStats;
   runIssues: string[];
 }

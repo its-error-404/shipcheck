@@ -32,6 +32,10 @@ export const registerAssessCommands = (program: Command) => {
     .option("-l, --label <label>", "dataset scope label (default: ASSESS_SCOPE_LABEL)")
     .option("-c, --concurrency <n>", "parallel investigations (default: ASSESS_CONCURRENCY, 1 for free tiers)")
     .option("--resume <runDir>", "reuse decided requirements from a previous run folder")
+    .option(
+      "--only <ids>",
+      "assess only these requirements, e.g. REQ-05 or REQ-04,REQ-08 (quick demo; not a release decision)",
+    )
     .option("-q, --quiet", "hide individual tool calls", false)
     .option("-o, --out <dir>", "base folder for run outputs", "runs")
     .action(async (o) => {
@@ -67,6 +71,9 @@ export const registerAssessCommands = (program: Command) => {
         ["Model", `${llm.model} ${c.gray(`(${llm.provider})`)}`],
         ["Run", `${runId} ${c.gray(`→ ${store.dir}`)}`],
         ...(resume ? ([["Resume", `${resume.size} result(s) from ${o.resume}`]] as [string, string][]) : []),
+        ...(o.only
+          ? ([["Scope", c.yellow(`only ${o.only} (partial run: not a release decision)`)]] as [string, string][])
+          : []),
       ]);
 
       const result = await assess({
@@ -79,6 +86,7 @@ export const registerAssessCommands = (program: Command) => {
         release,
         concurrency: Number(o.concurrency ?? assessCfg.ASSESS_CONCURRENCY),
         resume,
+        only: o.only ? String(o.only).split(",") : undefined,
         budgets: {
           discovery: { elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
           investigation: {
@@ -118,7 +126,13 @@ export const registerAssessCommands = (program: Command) => {
       );
       out();
       const overall = result.overall!;
-      out(`  ${c.bold("Overall")}  ${decision(overall.decision)}  ${c.gray(overall.reason)}`);
+      if (result.partial)
+        warn(
+          `Partial run: ${result.partial.selected.length} of ${result.partial.total} requirements. Not a release decision.`,
+        );
+      out(
+        `  ${c.bold(result.partial ? "Overall (partial)" : "Overall")}  ${decision(overall.decision)}  ${c.gray(overall.reason)}`,
+      );
       out(
         `  ${c.gray(`${overall.counts.PASS} pass · ${overall.counts.FAIL} fail · ${overall.counts.INSUFFICIENT_EVIDENCE} insufficient · ${duration(metrics.wallClockMs)} · ${metrics.llm.calls} model calls · ${metrics.tokens.total.toLocaleString("en-US")} tokens`)}`,
       );
