@@ -272,6 +272,10 @@ program
       release,
       concurrency: Number(o.concurrency ?? assessCfg.ASSESS_CONCURRENCY),
       resume,
+      budgets: {
+        discovery: { elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
+        investigation: { maxTurns: assessCfg.AGENT_MAX_TURNS, elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
+      },
       onRequirement: store.saveRequirement,
       log: (m) => console.log(m),
     });

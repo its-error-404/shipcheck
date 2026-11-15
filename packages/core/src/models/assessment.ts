@@ -22,6 +22,8 @@ export interface EvidenceItem {
 }
 
 export interface AgentStats {
+  /** Model that produced this result (runs resumed with another model can mix models). */
+  model?: string;
   stopReason: StopReason;
   error?: string;
   turns: number;

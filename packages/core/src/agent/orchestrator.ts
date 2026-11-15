@@ -58,7 +58,8 @@ export interface AssessOptions extends AssessmentRequest {
   log?: (message: string) => void;
 }
 
-const statsOf = (r: AgentRunResult<unknown>): AgentStats => ({
+const statsOf = (r: AgentRunResult<unknown>, model?: string): AgentStats => ({
+  model,
   stopReason: r.stopReason,
   error: r.error,
   turns: r.turns,
@@ -174,7 +175,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
     budget: budgets.discovery,
     trace: o.trace,
   });
-  result.discovery = statsOf(discovery);
+  result.discovery = statsOf(discovery, o.llm.model);
   if (discovery.stopReason !== "terminal" || !discovery.terminal)
     return abort(
       `Discovery did not produce a valid plan (${discovery.stopReason}${discovery.error ? `: ${discovery.error}` : ""}).`,
@@ -256,7 +257,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
             evidence: enrichEvidence(run.terminal, ledger),
             outstanding: run.terminal.outstanding,
             anomalies: run.terminal.anomalies,
-            agent: statsOf(run),
+            agent: statsOf(run, o.llm.model),
           }
         : {
             ...base,
@@ -266,7 +267,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
             evidence: examinedEvidence(ledger),
             outstanding: ["Re-run the investigation; the agent stopped before recording a decision."],
             anomalies: [],
-            agent: statsOf(run),
+            agent: statsOf(run, o.llm.model),
           };
     if (outcome.status === "agent_failed")
       result.runIssues.push(

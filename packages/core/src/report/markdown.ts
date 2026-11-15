@@ -77,7 +77,12 @@ export const renderReport = (r: AssessmentResult, metrics?: RunMetrics, opts: Re
     push(
       `| Target (from manifest) | release \`${r.target.release}\` · commit \`${r.target.commit}\` · service \`${r.target.service}\` · environment \`${r.target.environment}\` · prompt \`${r.target.prompt}\` |`,
     );
-  push(`| Model | \`${r.model}\` via ${r.provider} |`, `| Prompt version | ${r.promptVersion} |`);
+  const models = [...new Set(r.requirements.map((q) => q.agent?.model).filter(Boolean))];
+  const mixed = models.length > 1 || (models.length === 1 && models[0] !== r.model);
+  push(
+    `| Model | \`${r.model}\` via ${r.provider}${mixed ? ` (resumed run; models per requirement: ${models.map((m) => `\`${m}\``).join(", ")})` : ""} |`,
+    `| Prompt version | ${r.promptVersion} |`,
+  );
   push(`| Started / finished | ${r.startedAt} → ${r.finishedAt} |`, "");
 
   if (r.requirements.length) {
@@ -153,7 +158,7 @@ const renderRequirement = (q: RequirementResult, ref: (key: string, sourceId?: s
   if (q.agent) {
     const a = q.agent;
     out.push(
-      `<sub>Agent: ${a.turns} turns · ${a.toolCalls} tool calls (${a.toolErrors} errors) · ${fmtInt(a.inputTokens)} in / ${fmtInt(a.outputTokens)} out tokens · ${secs(a.durationMs)} · stop: ${a.stopReason}</sub>`,
+      `<sub>Agent${a.model ? ` (${a.model})` : ""}: ${a.turns} turns · ${a.toolCalls} tool calls (${a.toolErrors} errors) · ${fmtInt(a.inputTokens)} in / ${fmtInt(a.outputTokens)} out tokens · ${secs(a.durationMs)} · stop: ${a.stopReason}</sub>`,
       "",
     );
   }
