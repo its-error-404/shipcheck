@@ -55,12 +55,12 @@ Write-Host "  Starting: $ollamaExe serve  (logs: $errLog)"
 Start-Process -FilePath $ollamaExe -ArgumentList "serve" -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError $errLog
 $ready = $false
 for ($i = 0; $i -lt 90 -and -not $ready; $i++) {
-  try { Invoke-RestMethod -Uri "http://localhost:11434/api/version" -TimeoutSec 2 | Out-Null; $ready = $true } catch { Start-Sleep -Seconds 1 }
+  try { Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/version" -TimeoutSec 2 | Out-Null; $ready = $true } catch { Start-Sleep -Seconds 1 }
 }
 if (-not $ready) {
   Write-Host "  Server log (last 40 lines):" -ForegroundColor Yellow
   if (Test-Path $errLog) { Get-Content $errLog -Tail 40 }
-  throw "Ollama server did not start on http://localhost:11434 within 90 s (see log above)"
+  throw "Ollama server did not start on http://127.0.0.1:11434 within 90 s (see log above)"
 }
 Write-Host "  Ollama server is up"
 
@@ -82,7 +82,7 @@ if ($SkipEnvUpdate) {
 } else {
   Copy-Item $envFile "$envFile.bak" -Force
   $new = [ordered]@{
-    LLM_BASE_URL = "http://localhost:11434/v1"; LLM_API_KEY = "ollama"; LLM_MODEL = $Model; LLM_PROVIDER = "ollama"
+    LLM_BASE_URL = "http://127.0.0.1:11434/v1"; LLM_API_KEY = "ollama"; LLM_MODEL = $Model; LLM_PROVIDER = "ollama"
     LLM_RPM = "0"; LLM_TIMEOUT_MS = "300000"; LLM_REASONING_EFFORT = ""; AGENT_ELIDE_ABOVE_CHARS = "40000"
   }
   # Keep previous values as comments (e.g. the Gemini key) so switching back is easy.
