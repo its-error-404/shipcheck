@@ -170,3 +170,32 @@ describe("RateLimiter", () => {
     expect(now).toBeGreaterThanOrEqual(120_000);
   });
 });
+
+describe("timeouts", () => {
+  it("labels request timeouts as 'timeout' in the trace and retries", async () => {
+    let calls = 0;
+    const slowThenOk = (async (_u: any, init: any) => {
+      calls++;
+      if (calls === 1)
+        return new Promise((_r, reject) =>
+          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))),
+        );
+      return new Response(JSON.stringify(okToolCall.body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+    const trace = new MemoryTrace();
+    const c = new OpenAICompatibleClient({
+      baseURL: "https://llm.example/v1",
+      apiKey: "k",
+      model: "m",
+      fetch: slowThenOk,
+      trace,
+      timeoutMs: 50,
+      sleep: async () => {},
+    });
+    await c.chat(req);
+    expect(trace.events.find((e) => e.type === "llm_retry")?.reason).toBe("timeout");
+  });
+});

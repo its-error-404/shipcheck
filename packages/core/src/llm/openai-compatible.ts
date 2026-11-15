@@ -6,7 +6,7 @@
  * Retries are ours, not the SDK's (maxRetries: 0): every wait is traced, and we
  * can tell a per-minute limit (wait and retry) from a daily quota (stop).
  */
-import OpenAI, { APIConnectionError, APIError } from "openai";
+import OpenAI, { APIConnectionError, APIConnectionTimeoutError, APIError } from "openai";
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 import { LLM_DEFAULTS } from "../constants/llm";
 import { TRACE_EVENTS } from "../constants/trace";
@@ -144,6 +144,15 @@ export class OpenAICompatibleClient implements LlmClient {
   private classify(
     e: unknown,
   ): { kind: "retry"; reason: string; delayMs?: number; error: LlmError } | { kind: "fail"; error: LlmError } {
+    if (e instanceof APIConnectionTimeoutError) {
+      return {
+        kind: "retry",
+        reason: "timeout",
+        error: new LlmUnavailableError(
+          `LLM request timed out after ${this.opts.timeoutMs ?? LLM_DEFAULTS.timeoutMs} ms (provider overloaded or model thinking too long)`,
+        ),
+      };
+    }
     if (e instanceof APIConnectionError) {
       return {
         kind: "retry",

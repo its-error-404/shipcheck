@@ -250,6 +250,7 @@ program
       maxOutputTokens: llmCfg.LLM_MAX_OUTPUT_TOKENS,
       reasoningEffort: llmCfg.LLM_REASONING_EFFORT,
       rpm: llmCfg.LLM_RPM,
+      timeoutMs: llmCfg.LLM_TIMEOUT_MS,
       trace,
     });
     const resume = o.resume ? await RunStore.loadResume(o.resume) : undefined;

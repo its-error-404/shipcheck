@@ -44,6 +44,7 @@ export const LlmConfigSchema = z.object({
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(256).default(8192),
   LLM_REASONING_EFFORT: z.enum(["low", "medium", "high"]).optional(),
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(5_000).default(120_000),
   LLM_PRICE_INPUT_PER_MTOK: z.coerce.number().min(0).default(0),
   LLM_PRICE_OUTPUT_PER_MTOK: z.coerce.number().min(0).default(0),
 });
