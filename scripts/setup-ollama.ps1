@@ -83,7 +83,7 @@ if ($SkipEnvUpdate) {
   Copy-Item $envFile "$envFile.bak" -Force
   $new = [ordered]@{
     LLM_BASE_URL = "http://127.0.0.1:11434/v1"; LLM_API_KEY = "ollama"; LLM_MODEL = $Model; LLM_PROVIDER = "ollama"
-    LLM_RPM = "0"; LLM_TIMEOUT_MS = "300000"; LLM_REASONING_EFFORT = ""; AGENT_ELIDE_ABOVE_CHARS = "40000"
+    LLM_RPM = "0"; LLM_TIMEOUT_MS = "300000"; LLM_REASONING_EFFORT = ""; AGENT_ELIDE_ABOVE_CHARS = "40000"; AGENT_TIMEOUT_MS = "1200000"
   }
   # Keep previous values as comments (e.g. the Gemini key) so switching back is easy.
   $lines = Get-Content $envFile | ForEach-Object {

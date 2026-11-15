@@ -12,6 +12,23 @@ import type { LedgerComment, LedgerIssue } from "./models/evidence";
 export class EvidenceLedger {
   readonly issues = new Map<string, LedgerIssue>();
   readonly comments = new Map<string, LedgerComment>();
+  /** Issues opened with get_issue (not just seen in search results). */
+  readonly opened = new Set<string>();
+  /** Issues whose comments were read with get_comments. */
+  readonly commentsRead = new Set<string>();
+
+  markOpened(key: string): void {
+    this.opened.add(key);
+  }
+
+  markCommentsRead(key: string): void {
+    this.commentsRead.add(key);
+  }
+
+  /** Required issues not yet opened and read, for the coverage gate. */
+  missingCoverage(required: readonly string[]): string[] {
+    return required.filter((k) => !this.opened.has(k) || !this.commentsRead.has(k));
+  }
 
   recordIssue(issue: LedgerIssue): void {
     this.issues.set(issue.key, { ...this.issues.get(issue.key), ...issue });

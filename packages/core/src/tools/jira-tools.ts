@@ -100,6 +100,7 @@ export const getIssue = defineTool({
       const v = await ctx.view.getIssue(key);
       const comments = await ctx.view.getComments(key);
       ctx.ledger.recordIssue({ key, sourceId: v.sourceId, summary: v.summary, kind: v.kind });
+      ctx.ledger.markOpened(key);
       const lines = [
         `${v.key} · source ${v.sourceId ?? "?"} · kind ${v.kind ?? "?"} · filed under ${v.release ?? "?"} · recorded status ${v.recordedStatus ?? "?"} · Jira status ${v.status ?? "?"}`,
         `Summary: ${v.summary}`,
@@ -185,6 +186,7 @@ export const getComments = defineTool({
       const limit = a.limit ?? TOOL_LIMITS.commentsDefault;
       const page = entries.slice(offset, offset + limit);
       ctx.ledger.recordIssue({ key, sourceId: entry?.sourceId, summary: entry?.summary, kind: entry?.kind });
+      if (!a.contains) ctx.ledger.markCommentsRead(key);
 
       const lines: string[] = [];
       for (const e of page) {

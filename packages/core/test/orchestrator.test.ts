@@ -55,10 +55,16 @@ const policy = (failOn?: (req: ChatRequest) => Error | undefined) =>
         }
         const reqKey = /Investigate requirement (\S+)/.exec((req.messages[0] as { content: string }).content)![1]!;
         if (n === 1) return { toolCalls: [{ name: "get_issue", args: { ref: reqKey } }] };
-        if (last.includes("source REQ-")) {
-          const first = outgoing(last)[0];
-          return { toolCalls: [{ name: "get_comments", args: { ref: first ?? reqKey } }] };
-        }
+        // Like a diligent model: open + read every OUTGOING record seen so far (incl. dependencies), batched.
+        const tools = req.messages.filter((m) => m.role === "tool") as { content: string }[];
+        const opened = new Set(tools.map((t) => /^(\S+) · source/m.exec(t.content)?.[1]).filter(Boolean));
+        const read = new Set(tools.map((t) => /^(\S+) \(\S+\) · \d+ comment/m.exec(t.content)?.[1]).filter(Boolean));
+        const wanted = new Set([reqKey, ...tools.flatMap((t) => outgoing(t.content))]);
+        const calls = [...wanted].flatMap((k) => [
+          ...(opened.has(k) ? [] : [{ name: "get_issue", args: { ref: k } }]),
+          ...(read.has(k) ? [] : [{ name: "get_comments", args: { ref: k } }]),
+        ]);
+        if (calls.length) return { toolCalls: calls };
         return {
           toolCalls: [
             {

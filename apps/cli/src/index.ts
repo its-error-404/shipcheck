@@ -274,7 +274,11 @@ program
       resume,
       budgets: {
         discovery: { elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
-        investigation: { maxTurns: assessCfg.AGENT_MAX_TURNS, elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
+        investigation: {
+          maxTurns: assessCfg.AGENT_MAX_TURNS,
+          timeoutMs: assessCfg.AGENT_TIMEOUT_MS,
+          elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS,
+        },
       },
       onRequirement: store.saveRequirement,
       log: (m) => console.log(m),

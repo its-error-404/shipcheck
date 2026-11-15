@@ -37,6 +37,14 @@ const ctx = (requirement?: string): ToolContext => {
 };
 const run = (c: ToolContext, name: string, args: unknown) => executeTool(INVESTIGATION_TOOLS, name, args, c);
 
+/** Opens and reads the requirement and everything it links to (what the coverage gate requires). */
+const cover = async (c: ToolContext, ...refs: string[]) => {
+  for (const ref of refs) {
+    await run(c, "get_issue", { ref });
+    await run(c, "get_comments", { ref });
+  }
+};
+
 describe("search_issues", () => {
   it("finds the manifest by kind, inside the scope only", async () => {
     const r = await run(ctx(), "search_issues", { kind: "manifest" });
@@ -183,10 +191,36 @@ describe("record_decision + ledger", () => {
     });
     expect(r.content).toMatch(/must be/);
   });
+  it("rejects a decision before the linked records were investigated (coverage gate)", async () => {
+    const c = ctx("REQ-07");
+    await run(c, "get_issue", { ref: "REQ-07" });
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-07",
+      decision: "INSUFFICIENT_EVIDENCE",
+      explanation: "Nothing examined yet but deciding anyway.",
+      evidence: [],
+      outstanding: ["everything"],
+    });
+    expect(r.isError).toBe(true);
+    expect(r.content).toMatch(/Investigation incomplete/);
+    expect(r.content).toMatch(/REC-9745/);
+    expect(r.content).toMatch(/REC-6499/);
+  });
+  it("requires the dependency of a linked record too (2 hops: REQ-08 → REC-4076 → REC-9635)", async () => {
+    const c = ctx("REQ-08");
+    await cover(c, "REQ-08", "REC-4076");
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-08",
+      decision: "INSUFFICIENT_EVIDENCE",
+      explanation: "Stopping before the dependency.",
+      evidence: [],
+      outstanding: ["x"],
+    });
+    expect(r.content).toMatch(/Not yet done: .*REC-9635/);
+  });
   it("accepts a properly evidenced decision", async () => {
     const c = ctx("REQ-07");
-    await run(c, "get_issue", { ref: "REC-9745" });
-    await run(c, "get_comments", { ref: "REC-9745" });
+    await cover(c, "REQ-07", "REC-9745", "REC-6499");
     const id = [...c.ledger.comments.values()].find((x) => x.body.includes("REDACT-901"))!.id;
     const r = await run(c, "record_decision", {
       requirement_key: "REQ-07",
@@ -252,8 +286,7 @@ describe("tool specs", () => {
 describe("record_decision usability for small models", () => {
   it("accepts source IDs (REQ-07 / REC-9745) in citations", async () => {
     const c = ctx("REQ-07");
-    await run(c, "get_issue", { ref: "REC-9745" });
-    await run(c, "get_comments", { ref: "REC-9745" });
+    await cover(c, "REQ-07", "REC-9745", "REC-6499");
     const id = [...c.ledger.comments.values()].find((x) => x.body.includes("REDACT-901"))!.id;
     const r = await run(c, "record_decision", {
       requirement_key: "REQ-07",

@@ -66,6 +66,12 @@ export const AssessConfigSchema = z.object({
   ASSESS_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(1),
   /** Max model turns per investigation (lower = fewer requests; free tiers allow few per day). */
   AGENT_MAX_TURNS: z.coerce.number().int().min(4).max(60).default(20),
+  /** Wall-clock limit per investigation in ms (raise for slow local models). */
+  AGENT_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(60_000)
+    .default(8 * 60_000),
   /** Elide old tool results above this conversation size (chars); lower it for small local context windows. */
   AGENT_ELIDE_ABOVE_CHARS: z.coerce.number().int().min(8_000).default(60_000),
 });

@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { DECISIONS, STANCES, type DecisionInput } from "../models/decision";
-import { defineTool, toolError } from "./types";
+import { defineTool, toolError, type ToolContext } from "./types";
 
 export interface Plan {
   manifestKey: string;
@@ -56,6 +56,22 @@ export const submitPlan = defineTool({
   },
 });
 
+/**
+ * Coverage gate: the requirement, every record it links to (OUTGOING), and those records'
+ * OUTGOING links (dependencies, 2 hops) must have been opened and their comments read.
+ * It enforces "investigate linked records" without telling the model what to decide.
+ */
+export const requiredCoverage = async (ctx: ToolContext, requirementKey: string): Promise<string[]> => {
+  const required = new Set<string>([requirementKey]);
+  const requirement = await ctx.view.getIssue(requirementKey);
+  for (const hop1 of requirement.links.filter((l) => l.direction === "outgoing")) {
+    required.add(hop1.key);
+    const linked = await ctx.view.getIssue(hop1.key);
+    for (const hop2 of linked.links.filter((l) => l.direction === "outgoing")) required.add(hop2.key);
+  }
+  return [...required];
+};
+
 export const recordDecision = defineTool({
   name: "record_decision",
   description:
@@ -100,6 +116,15 @@ export const recordDecision = defineTool({
       anomalies: a.anomalies ?? [],
     };
     const problems = ctx.ledger.validate(input, ctx.requirementKey);
+    const missing = ctx.ledger.missingCoverage(await requiredCoverage(ctx, ctx.requirementKey));
+    if (missing.length) {
+      const labels = await Promise.all(
+        missing.map(async (k) => `${k} (${(await ctx.view.inScope(k))?.sourceId ?? "?"})`),
+      );
+      problems.push(
+        `Investigation incomplete: open (get_issue) AND read the comments (get_comments) of every record linked from the requirement and their dependencies before deciding. Not yet done: ${labels.join(", ")}. Request them together in one turn.`,
+      );
+    }
     if (problems.length)
       return toolError(
         `Decision rejected:\n- ${problems.join("\n- ")}`,

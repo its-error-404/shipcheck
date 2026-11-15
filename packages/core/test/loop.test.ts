@@ -53,9 +53,11 @@ const setup = (llm: ScriptedLlm, b: Partial<Budget> = {}) => {
 
 /** Finds the comment id in the transcript so the scripted model can cite it like a real one would. */
 const idOf = (req: any, needle: string) => {
-  const tool = [...req.messages].reverse().find((m: any) => m.role === "tool" && m.content.includes(needle));
-  const block = tool.content.split("\n\n").find((b: string) => b.includes(needle));
-  return /\[comment (\d+)/.exec(block)![1]!;
+  const blocks = req.messages
+    .filter((m: any) => m.role === "tool")
+    .flatMap((m: any) => m.content.split("\n\n"))
+    .filter((b: string) => b.includes(needle) && b.includes("[comment "));
+  return /\[comment (\d+)/.exec(blocks[0])![1]!;
 };
 
 describe("agent loop", () => {
@@ -64,8 +66,11 @@ describe("agent loop", () => {
       { toolCalls: [{ name: "get_issue", args: { ref: "REQ-07" } }] },
       {
         toolCalls: [
+          { name: "get_comments", args: { ref: "REQ-07" } },
           { name: "get_issue", args: { ref: "REC-9745" } },
           { name: "get_comments", args: { ref: "REC-9745" } },
+          { name: "get_issue", args: { ref: "REC-6499" } },
+          { name: "get_comments", args: { ref: "REC-6499" } },
         ],
       },
       (req) => ({
@@ -94,9 +99,12 @@ describe("agent loop", () => {
     expect(r.stopReason).toBe("terminal");
     expect((r.terminal as any).decision).toBe("PASS");
     expect(r.turns).toBe(3);
-    expect(r.toolCalls).toBe(4);
+    expect(r.toolCalls).toBe(7);
     expect(trace.events.filter((e) => e.type === "tool_call").map((e) => e.tool)).toEqual([
       "get_issue",
+      "get_comments",
+      "get_issue",
+      "get_comments",
       "get_issue",
       "get_comments",
       "record_decision",
@@ -121,20 +129,28 @@ describe("agent loop", () => {
       (req) => {
         const last = req.messages[req.messages.length - 1] as any;
         expect(last.content).toMatch(/Decision rejected/);
+        // The model reacts to the rejection by investigating the linked records…
         return {
-          toolCalls: [
-            {
-              name: "record_decision",
-              args: {
-                requirement_key: keyOf("REQ-07"),
-                decision: "INSUFFICIENT_EVIDENCE",
-                explanation: "No QA evidence was examined in this run at all.",
-                evidence: [],
-                outstanding: ["Examine linked QA records"],
-              },
-            },
-          ],
+          toolCalls: ["REQ-07", "REC-9745", "REC-6499"].flatMap((ref) => [
+            { name: "get_issue", args: { ref } },
+            { name: "get_comments", args: { ref } },
+          ]),
         };
+      },
+      // …and then records a decision the gate accepts.
+      {
+        toolCalls: [
+          {
+            name: "record_decision",
+            args: {
+              requirement_key: keyOf("REQ-07"),
+              decision: "INSUFFICIENT_EVIDENCE",
+              explanation: "Records examined; this scripted model does not judge them.",
+              evidence: [],
+              outstanding: ["Human review"],
+            },
+          },
+        ],
       },
     ]);
     const r = await setup(llm).run();
