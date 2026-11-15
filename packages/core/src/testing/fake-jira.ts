@@ -106,6 +106,7 @@ export class FakeJira {
     const p = path.replace(/^\/rest\/api\/3/, "");
 
     if (method === "GET" && p === "/myself") return ok({ accountId: "fake-1", displayName: "Fake Importer" });
+    if (method === "GET" && p === "/project/search") return ok({ values: [{ key: this.projectKey, name: "Fake project" }] });
     if (method === "GET" && (m = /^\/project\/([^/]+)$/.exec(p)))
       return m[1] === this.projectKey ? ok({ id: "1", key: this.projectKey, name: "Fake project" }) : notFound();
     if (method === "GET" && (m = /^\/issue\/createmeta\/([^/]+)\/issuetypes$/.exec(p)))

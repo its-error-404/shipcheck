@@ -54,8 +54,8 @@ program
     const { cfg, http } = jiraHttp();
     const jira = new JiraReader(http);
     const me = await jira.myself();
-    const project = await jira.getProject(cfg.JIRA_PROJECT_KEY);
     console.log(`✓ Authenticated as ${me.displayName}`);
+    const project = await jira.getProjectOrExplain(cfg.JIRA_PROJECT_KEY);
     console.log(`✓ Project ${project.key}: ${project.name}`);
   });
 

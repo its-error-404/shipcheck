@@ -73,7 +73,7 @@ export class Importer {
   async preflight(): Promise<{ issueTypeId: string; user: string }> {
     const me = await this.jira.myself();
     this.log(`✓ Authenticated as ${me.displayName}`);
-    const project = await this.jira.getProject(this.opts.projectKey);
+    const project = await this.jira.getProjectOrExplain(this.opts.projectKey);
     this.log(`✓ Project ${project.key} (${project.name})`);
 
     const wanted = (this.opts.issueTypeName ?? "Task").toLowerCase();

@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import type { AdfDoc } from "./adf";
+import { JiraNotFoundError } from "./errors";
 
 /** The subset of Jira's issue shape we rely on. */
 export interface JiraIssueLink {
@@ -54,6 +55,27 @@ export class JiraReader {
 
   async getProject(key: string): Promise<{ id: string; key: string; name: string }> {
     return (await this.http.get(`/rest/api/3/project/${encodeURIComponent(key)}`)).data;
+  }
+
+  /** Projects visible to the current user (used to give helpful errors). */
+  async listProjects(): Promise<{ key: string; name: string }[]> {
+    const data = (await this.http.get("/rest/api/3/project/search", { params: { maxResults: 50 } })).data;
+    return (data.values ?? []).map((p: { key: string; name: string }) => ({ key: p.key, name: p.name }));
+  }
+
+  /** getProject, but a 404 explains which project keys do exist. */
+  async getProjectOrExplain(key: string): Promise<{ id: string; key: string; name: string }> {
+    try {
+      return await this.getProject(key);
+    } catch (e) {
+      if (!(e instanceof JiraNotFoundError)) throw e;
+      const projects = await this.listProjects().catch(() => []);
+      const list = projects.length ? projects.map((p) => `${p.key} ("${p.name}")`).join(", ") : "none visible to this account";
+      throw new JiraNotFoundError(
+        `Project "${key}" not found. Projects you can access: ${list}. Set JIRA_PROJECT_KEY in .env to the right key (shown in the project URL / Project settings).`,
+        404,
+      );
+    }
   }
 
   async getIssueTypes(projectKey: string): Promise<{ id: string; name: string }[]> {

@@ -92,6 +92,6 @@ describe("Importer (full dataset against fake Jira)", () => {
   it("fails preflight clearly when the project is wrong", async () => {
     const ds = await loadDataset(DATASET_PATH);
     const { jira } = fakeClient();
-    await expect(new Importer(jira, ds, { projectKey: "NOPE" }).run()).rejects.toThrow(/Not found/);
+    await expect(new Importer(jira, ds, { projectKey: "NOPE" }).run()).rejects.toThrow(/Projects you can access: TYN/);
   });
 });
