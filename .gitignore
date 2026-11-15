@@ -9,3 +9,7 @@ private/
 eval/expected-*.json
 # Assessment runs: only the submitted run is committed (force-added)
 runs/
+
+# Build output and local evaluation results (evaluation files contain the answer key)
+**/dist
+runs/**/evaluation.*

@@ -3,3 +3,4 @@ inputs
 artifacts
 runs
 package-lock.json
+**/dist
