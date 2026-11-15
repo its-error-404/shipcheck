@@ -1,0 +1,57 @@
+{
+  "key": "KAN-403",
+  "sourceId": "REQ-12",
+  "summary": "[REQ-12] Streaming completion integrity",
+  "criterion": "Every mandatory streaming case must complete without duplicate or missing final messages.",
+  "mandatory": true,
+  "status": "agent_failed",
+  "decision": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The agent did not complete this investigation (stop reason: max_turns). No decision was recorded, so the requirement cannot be considered verified.",
+  "evidence": [
+    {
+      "issueKey": "KAN-403",
+      "sourceId": "REQ-12",
+      "issueSummary": "[REQ-12] Streaming completion integrity",
+      "stance": "inconclusive",
+      "why": "Examined by the agent before it stopped; no decision was recorded."
+    },
+    {
+      "issueKey": "KAN-321",
+      "sourceId": "REC-5957",
+      "issueSummary": "[REC-5957] Streaming QA verification - Streaming completion integrity",
+      "stance": "inconclusive",
+      "why": "Examined by the agent before it stopped; no decision was recorded."
+    },
+    {
+      "issueKey": "KAN-38",
+      "sourceId": "REC-2513",
+      "issueSummary": "[REC-2513] Regression tests: warehouse-agent R2.3",
+      "stance": "inconclusive",
+      "why": "Examined by the agent before it stopped; no decision was recorded."
+    },
+    {
+      "issueKey": "KAN-363",
+      "sourceId": "MANIFEST",
+      "issueSummary": "[MANIFEST] Release manifest for atlas-assistant R2.4",
+      "stance": "inconclusive",
+      "why": "Examined by the agent before it stopped; no decision was recorded."
+    }
+  ],
+  "outstanding": [
+    "Re-run the investigation; the agent stopped before recording a decision."
+  ],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "max_turns",
+    "turns": 20,
+    "toolCalls": 20,
+    "toolErrors": 14,
+    "inputTokens": 110899,
+    "outputTokens": 22036,
+    "cachedTokens": 97815,
+    "durationMs": 1065632,
+    "llmLatencyMs": 1063325,
+    "waitedMs": 0
+  }
+}

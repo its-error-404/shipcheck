@@ -1,0 +1,53 @@
+{
+  "key": "KAN-56",
+  "sourceId": "REQ-04",
+  "summary": "[REQ-04] Response latency",
+  "criterion": "The production-equivalent target-build p95 response time must be at most 2.0 seconds.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "PASS",
+  "explanation": "The acceptance criterion requires production-environment verification of p95 latency ≤ 2.0s. REC-6024 (production) shows 1.40s meeting the threshold via comment 10745, while REC-1028 (staging) is irrelevant for production scope as stated in comment 11729. Developer status updates in REQ-04 are superseded by explicit production results in REC-6024.",
+  "evidence": [
+    {
+      "issueKey": "KAN-153",
+      "sourceId": "REC-6024",
+      "issueSummary": "[REC-6024] Performance run - Response latency",
+      "commentId": "10745",
+      "position": "3/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Performance run PERF-827: release R2.4; commit b7a91f2; service atlas-assistant; environment production; prompt p7. Measured p95 latency 1.40 seconds across 1000 requests.",
+      "stance": "supports_pass",
+      "why": "Production environment p95 latency 1.40s ≤ 2.0s for R2.4/b7a91f2/p7"
+    },
+    {
+      "issueKey": "KAN-342",
+      "sourceId": "REC-1028",
+      "issueSummary": "[REC-1028] Performance run (staging) - Response latency",
+      "commentId": "11729",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T16:30:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Performance run PERF-812: release R2.4; commit b7a91f2; service atlas-assistant; environment staging; prompt p7. Measured p95 latency 2.60 seconds across 1000 requests on the shared staging cluster.",
+      "stance": "not_applicable",
+      "why": "Staging environment results (2.60s) do not satisfy production scope requirement"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 5,
+    "toolCalls": 9,
+    "toolErrors": 2,
+    "inputTokens": 16814,
+    "outputTokens": 3171,
+    "cachedTokens": 14124,
+    "durationMs": 145845,
+    "llmLatencyMs": 143556,
+    "waitedMs": 0
+  }
+}

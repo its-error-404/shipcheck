@@ -1,0 +1,36 @@
+{
+  "key": "KAN-332",
+  "sourceId": "REQ-07",
+  "summary": "[REQ-07] Sensitive log redaction",
+  "criterion": "QA must verify that sensitive identifiers are redacted on the target build.",
+  "mandatory": true,
+  "status": "agent_failed",
+  "decision": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The agent did not complete this investigation (stop reason: timeout). No decision was recorded, so the requirement cannot be considered verified.",
+  "evidence": [
+    {
+      "issueKey": "KAN-332",
+      "sourceId": "REQ-07",
+      "issueSummary": "[REQ-07] Sensitive log redaction",
+      "stance": "inconclusive",
+      "why": "Examined by the agent before it stopped; no decision was recorded."
+    }
+  ],
+  "outstanding": [
+    "Re-run the investigation; the agent stopped before recording a decision."
+  ],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "timeout",
+    "turns": 2,
+    "toolCalls": 3,
+    "toolErrors": 0,
+    "inputTokens": 4448,
+    "outputTokens": 1834,
+    "cachedTokens": 4401,
+    "durationMs": 2787881,
+    "llmLatencyMs": 80823,
+    "waitedMs": 2000
+  }
+}

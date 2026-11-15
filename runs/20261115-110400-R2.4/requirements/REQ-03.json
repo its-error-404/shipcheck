@@ -1,0 +1,57 @@
+{
+  "key": "KAN-228",
+  "sourceId": "REQ-03",
+  "summary": "[REQ-03] Answer quality for deployed prompt",
+  "criterion": "The approved quality evaluation must achieve at least 90 percent and match the deployed prompt p7.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "FAIL",
+  "explanation": "The requirement mandates answer quality evaluation must achieve ≥90% accuracy AND match the deployed prompt p7 in production. REC-4323's evaluation (EVAL-55) achieved 96.2% accuracy in production but used prompt bundle p6 (frozen 2026-11-01), conflicting with the target prompt p7. This violates the dual criteria. REQ-03's developer marked it Done without verifying prompt alignment, further confirming failure. No other evidence shows production evaluation with prompt p7.",
+  "evidence": [
+    {
+      "issueKey": "KAN-29",
+      "sourceId": "REC-4323",
+      "issueSummary": "[REC-4323] Answer quality evaluation - Answer quality for deployed prompt",
+      "commentId": "10131",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "EVAL-55 completed: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Answer accuracy 96.2 percent across 500 graded questions. Approved.",
+      "stance": "supports_fail",
+      "why": "Evaluation EVAL-55 in production environment (R2.4, b7a91f2) achieved 96.2% accuracy but used prompt bundle p6 instead of deployed prompt p7, violating the requirement's prompt match criterion."
+    },
+    {
+      "issueKey": "KAN-228",
+      "sourceId": "REQ-03",
+      "issueSummary": "[REQ-03] Answer quality for deployed prompt",
+      "commentId": "11118",
+      "position": "3/5",
+      "recordedAt": "2026-11-07T18:00:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Implementation complete; marking requirement Done. Verification and approvals are tracked in linked issues.",
+      "stance": "supports_fail",
+      "why": "Developer marked requirement Done without confirming production evaluation matched deployed prompt p7."
+    }
+  ],
+  "outstanding": [
+    "Verify if prompt bundle p6 included p7 in its configuration."
+  ],
+  "anomalies": [
+    "Comment in REC-4323 mentions prompt bundle p6, conflicting with target prompt p7."
+  ],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 8,
+    "toolCalls": 8,
+    "toolErrors": 0,
+    "inputTokens": 24144,
+    "outputTokens": 6488,
+    "cachedTokens": 22101,
+    "durationMs": 292769,
+    "llmLatencyMs": 290374,
+    "waitedMs": 0
+  }
+}

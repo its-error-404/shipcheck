@@ -1,0 +1,66 @@
+{
+  "key": "KAN-51",
+  "sourceId": "REQ-08",
+  "summary": "[REQ-08] Human handoff delivery",
+  "criterion": "When an answer is escalated, a handoff must reach the support queue, including its linked delivery dependency.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "FAIL",
+  "explanation": "The acceptance criterion requires handoff delivery to production support queue (R2.4/b7a91f2/atlas-assistant/p7). KAN-79's QA result (comment 10380) shows 0/12 escalated conversations reached the queue, with defect HND-DEF-4 open. This constitutes a failure per the rules: unclosed confirmed defects block acceptance. The dependency chain (REQ-08 → REC-4076 → REC-9635) is unresolved, and no evidence overrides this failure.",
+  "evidence": [
+    {
+      "issueKey": "KAN-79",
+      "sourceId": "REC-9635",
+      "issueSummary": "[REC-9635] Queue adapter verification - Human handoff delivery",
+      "commentId": "10380",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Handoff delivery test HND-77: release R2.4; commit b7a91f2; service atlas-assistant; environment production. 0 of 12 escalated conversations reached the support queue; the queue adapter drops them. Defect HND-DEF-4 status: open.",
+      "stance": "supports_fail",
+      "why": "QA Lead Priya Nair's comment (10380) explicitly states defect HND-DEF-4 is open, blocking handoff delivery to production queue"
+    },
+    {
+      "issueKey": "KAN-79",
+      "sourceId": "REC-9635",
+      "issueSummary": "[REC-9635] Queue adapter verification - Human handoff delivery",
+      "commentId": "10380",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Handoff delivery test HND-77: release R2.4; commit b7a91f2; service atlas-assistant; environment production. 0 of 12 escalated conversations reached the support queue; the queue adapter drops them. Defect HND-DEF-4 status: open.",
+      "stance": "supports_fail",
+      "why": "0/12 escalated conversations reached support queue (comment 10380) directly violates the acceptance criterion"
+    },
+    {
+      "issueKey": "KAN-345",
+      "sourceId": "REC-4076",
+      "issueSummary": "[REC-4076] Handoff implementation - Human handoff delivery",
+      "commentId": "11751",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T13:00:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Handoff UI implemented for release R2.4. Message delivery relies on the linked queue-adapter work.",
+      "stance": "supports_fail",
+      "why": "Depends on unresolved KAN-79 (REC-9635) which failed verification"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 12,
+    "toolCalls": 12,
+    "toolErrors": 5,
+    "inputTokens": 49117,
+    "outputTokens": 8517,
+    "cachedTokens": 44116,
+    "durationMs": 384413,
+    "llmLatencyMs": 382425,
+    "waitedMs": 0
+  }
+}

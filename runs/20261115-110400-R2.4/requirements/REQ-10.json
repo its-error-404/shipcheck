@@ -1,0 +1,40 @@
+{
+  "key": "KAN-60",
+  "sourceId": "REQ-10",
+  "summary": "[REQ-10] Document parsing completeness",
+  "criterion": "The target build must pass all 60 mandatory document parsing cases.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "PASS",
+  "explanation": "The acceptance criterion for REQ-10 requires passing all 60 mandatory document parsing cases. REC-9611's final QA retest (PARSE-622) explicitly confirms 60/60 mandatory cases pass for R2.4/b7a91f2 in production. This supersedes earlier PARSE-601 failure, and no defects remain open. Security approval (REC-1306) is unrelated to parsing completeness.",
+  "evidence": [
+    {
+      "issueKey": "KAN-12",
+      "sourceId": "REC-9611",
+      "issueSummary": "[REC-9611] Document parsing verification - Document parsing completeness",
+      "commentId": "10049",
+      "position": "5/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "PARSE-622 supersedes PARSE-601. Retest on release R2.4; commit b7a91f2; service atlas-assistant; environment production: 60 of 60 mandatory parsing cases pass.",
+      "stance": "supports_pass",
+      "why": "Final retest confirms 60/60 mandatory parsing cases pass for target build"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 5,
+    "toolCalls": 5,
+    "toolErrors": 0,
+    "inputTokens": 13065,
+    "outputTokens": 2799,
+    "cachedTokens": 11745,
+    "durationMs": 112719,
+    "llmLatencyMs": 111638,
+    "waitedMs": 0
+  }
+}

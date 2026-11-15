@@ -1,0 +1,182 @@
+{
+  "wallClockMs": 6139268,
+  "llm": {
+    "calls": 90,
+    "latencyMs": 3399810,
+    "waitedMs": 2000,
+    "retries": 1,
+    "errors": 0
+  },
+  "tools": {
+    "calls": 114,
+    "errors": 28,
+    "timeMs": 24060,
+    "byTool": {
+      "search_issues": 6,
+      "get_issue": 36,
+      "submit_plan": 1,
+      "get_comments": 33,
+      "record_decision": 38
+    }
+  },
+  "jira": {
+    "httpCalls": 81,
+    "retries": 0,
+    "errors": 0,
+    "timeMs": 32689
+  },
+  "tokens": {
+    "input": 335489,
+    "output": 75638,
+    "cached": 295190,
+    "total": 411127
+  },
+  "cost": {
+    "usd": 0,
+    "prices": {
+      "inputPerMTok": 0,
+      "outputPerMTok": 0
+    }
+  },
+  "perRequirement": [
+    {
+      "requirement": "REQ-01",
+      "decision": "PASS",
+      "status": "decided",
+      "turns": 3,
+      "toolCalls": 7,
+      "inputTokens": 8542,
+      "outputTokens": 2145,
+      "durationMs": 100010,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-02",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 6,
+      "toolCalls": 12,
+      "inputTokens": 21371,
+      "outputTokens": 5115,
+      "durationMs": 240649,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-03",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 8,
+      "toolCalls": 8,
+      "inputTokens": 24144,
+      "outputTokens": 6488,
+      "durationMs": 292769,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-04",
+      "decision": "PASS",
+      "status": "decided",
+      "turns": 5,
+      "toolCalls": 9,
+      "inputTokens": 16814,
+      "outputTokens": 3171,
+      "durationMs": 145845,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-05",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 9,
+      "toolCalls": 9,
+      "inputTokens": 29907,
+      "outputTokens": 7600,
+      "durationMs": 315810,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-06",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "decided",
+      "turns": 3,
+      "toolCalls": 7,
+      "inputTokens": 8531,
+      "outputTokens": 3648,
+      "durationMs": 152238,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-07",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "agent_failed",
+      "turns": 2,
+      "toolCalls": 3,
+      "inputTokens": 4448,
+      "outputTokens": 1834,
+      "durationMs": 2787881,
+      "stopReason": "timeout"
+    },
+    {
+      "requirement": "REQ-08",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 12,
+      "toolCalls": 12,
+      "inputTokens": 49117,
+      "outputTokens": 8517,
+      "durationMs": 384413,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-09",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 9,
+      "toolCalls": 9,
+      "inputTokens": 29106,
+      "outputTokens": 5963,
+      "durationMs": 259749,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-10",
+      "decision": "PASS",
+      "status": "decided",
+      "turns": 5,
+      "toolCalls": 5,
+      "inputTokens": 13065,
+      "outputTokens": 2799,
+      "durationMs": 112719,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-11",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "decided",
+      "turns": 5,
+      "toolCalls": 10,
+      "inputTokens": 15244,
+      "outputTokens": 4449,
+      "durationMs": 194352,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-12",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "agent_failed",
+      "turns": 20,
+      "toolCalls": 20,
+      "inputTokens": 110899,
+      "outputTokens": 22036,
+      "durationMs": 1065632,
+      "stopReason": "max_turns"
+    }
+  ],
+  "discovery": {
+    "turns": 3,
+    "toolCalls": 3,
+    "inputTokens": 4301,
+    "outputTokens": 1873,
+    "durationMs": 78320
+  }
+}

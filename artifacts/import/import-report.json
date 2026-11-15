@@ -1,0 +1,32 @@
+{
+  "projectKey": "KAN",
+  "scopeLabel": "tyn-release-assessment-v2",
+  "dryRun": false,
+  "startedAt": "2026-11-15T04:24:33.711Z",
+  "durationMs": 545503,
+  "records": 400,
+  "issues": {
+    "created": 400,
+    "existing": 0,
+    "failed": 0
+  },
+  "comments": {
+    "created": 2059,
+    "existing": 0,
+    "failed": 0,
+    "expected": 2059
+  },
+  "links": {
+    "created": 76,
+    "existing": 0,
+    "failed": 0,
+    "expected": 76
+  },
+  "statuses": {
+    "transitioned": 252,
+    "alreadyCorrect": 148,
+    "unmatched": 0
+  },
+  "warnings": [],
+  "errors": []
+}
