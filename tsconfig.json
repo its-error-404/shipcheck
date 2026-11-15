@@ -16,10 +16,9 @@
     "types": [
       "node"
     ],
-    "baseUrl": ".",
     "paths": {
       "@tyn/core": [
-        "packages/core/src/index.ts"
+        "./packages/core/src/index.ts"
       ]
     }
   },
