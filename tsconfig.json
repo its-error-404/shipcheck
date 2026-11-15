@@ -16,5 +16,5 @@
       "@shipcheck/core": ["./packages/core/src/index.ts"]
     }
   },
-  "include": ["packages/*/src", "packages/*/test", "apps/*/src"]
+  "include": ["packages/*/src", "packages/*/test", "apps/cli/src", "apps/server/src", "apps/server/test"]
 }

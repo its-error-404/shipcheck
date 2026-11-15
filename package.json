@@ -12,7 +12,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/web/tsconfig.json",
     "test": "vitest run",
     "verify-jira": "tsx apps/cli/src/index.ts verify-jira",
     "import": "tsx apps/cli/src/index.ts import",
@@ -26,7 +26,11 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "verify-llm": "tsx apps/cli/src/index.ts verify-llm",
     "evaluate": "tsx apps/cli/src/index.ts evaluate",
-    "setup:ollama": "powershell -ExecutionPolicy Bypass -File scripts/setup-ollama.ps1"
+    "setup:ollama": "powershell -ExecutionPolicy Bypass -File scripts/setup-ollama.ps1",
+    "serve": "tsx apps/server/src/index.ts",
+    "web:dev": "npm run dev -w @shipcheck/web",
+    "web:build": "npm run build -w @shipcheck/web",
+    "ui": "npm run web:build && npm run serve"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
