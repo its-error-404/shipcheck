@@ -1,25 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Command } from "commander";
-import {
-  ExpectedSchema,
-  JiraReader,
-  JsonlTrace,
-  MemoryTrace,
-  OpenAICompatibleClient,
-  RunStore,
-  TeeTrace,
-  assess,
-  buildMetrics,
-  evaluateRun,
-  loadAssessConfig,
-  loadJiraConfig,
-  loadLlmConfig,
-  newRunId,
-  renderEval,
-  renderReport,
-} from "@shipcheck/core";
-import { jiraHttp } from "../shared";
+import { ExpectedSchema, RunStore, evaluateRun, prepareSession, renderEval } from "@shipcheck/core";
 import { AssessProgress } from "../progress";
 import { banner, c, decision, duration, fail, info, ok, out, table, warn } from "../ui";
 
@@ -39,70 +21,32 @@ export const registerAssessCommands = (program: Command) => {
     .option("-q, --quiet", "hide individual tool calls", false)
     .option("-o, --out <dir>", "base folder for run outputs", "runs")
     .action(async (o) => {
-      const jiraCfg = loadJiraConfig();
-      const llmCfg = loadLlmConfig();
-      const assessCfg = loadAssessConfig();
-      const release: string = o.release ?? assessCfg.ASSESS_RELEASE;
-      const projectKey: string = o.project ?? jiraCfg.JIRA_PROJECT_KEY;
-      const scopeLabel: string = o.label ?? assessCfg.ASSESS_SCOPE_LABEL;
-      const runId = newRunId(release);
-      const store = await RunStore.create(o.out, runId);
-      const jsonl = new JsonlTrace(store.tracePath);
-      const memory = new MemoryTrace();
-      const trace = new TeeTrace([jsonl, memory, new AssessProgress({ quiet: o.quiet })]);
-      const { http } = jiraHttp(trace);
-      const llm = new OpenAICompatibleClient({
-        baseURL: llmCfg.LLM_BASE_URL,
-        apiKey: llmCfg.LLM_API_KEY,
-        model: llmCfg.LLM_MODEL,
-        provider: llmCfg.LLM_PROVIDER,
-        temperature: llmCfg.LLM_TEMPERATURE,
-        maxOutputTokens: llmCfg.LLM_MAX_OUTPUT_TOKENS,
-        reasoningEffort: llmCfg.LLM_REASONING_EFFORT,
-        rpm: llmCfg.LLM_RPM,
-        timeoutMs: llmCfg.LLM_TIMEOUT_MS,
-        trace,
-      });
       const resume = o.resume ? await RunStore.loadResume(o.resume) : undefined;
+      const session = await prepareSession({
+        release: o.release,
+        projectKey: o.project,
+        scopeLabel: o.label,
+        concurrency: o.concurrency ? Number(o.concurrency) : undefined,
+        only: o.only ? String(o.only).split(",") : undefined,
+        resume,
+        outDir: o.out,
+        sinks: [new AssessProgress({ quiet: o.quiet })],
+      });
+      const s = session.info;
 
       banner("Release readiness assessment", [
-        ["Release", c.bold(release)],
-        ["Jira", `${jiraCfg.JIRA_BASE_URL}  project ${projectKey}  label ${scopeLabel}`],
-        ["Model", `${llm.model} ${c.gray(`(${llm.provider})`)}`],
-        ["Run", `${runId} ${c.gray(`→ ${store.dir}`)}`],
+        ["Release", c.bold(s.release)],
+        ["Jira", `${s.siteUrl ?? ""}  project ${s.projectKey}  label ${s.scopeLabel}`],
+        ["Model", `${s.model} ${c.gray(`(${s.provider})`)}`],
+        ["Run", `${s.runId} ${c.gray(`→ ${s.dir}`)}`],
         ...(resume ? ([["Resume", `${resume.size} result(s) from ${o.resume}`]] as [string, string][]) : []),
         ...(o.only
           ? ([["Scope", c.yellow(`only ${o.only} (partial run: not a release decision)`)]] as [string, string][])
           : []),
       ]);
 
-      const result = await assess({
-        jira: new JiraReader(http),
-        llm,
-        trace,
-        runId,
-        projectKey,
-        scopeLabel,
-        release,
-        concurrency: Number(o.concurrency ?? assessCfg.ASSESS_CONCURRENCY),
-        resume,
-        only: o.only ? String(o.only).split(",") : undefined,
-        budgets: {
-          discovery: { elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS },
-          investigation: {
-            maxTurns: assessCfg.AGENT_MAX_TURNS,
-            timeoutMs: assessCfg.AGENT_TIMEOUT_MS,
-            elideAboveChars: assessCfg.AGENT_ELIDE_ABOVE_CHARS,
-          },
-        },
-        onRequirement: store.saveRequirement,
-      });
-      const metrics = buildMetrics(result, memory.events, {
-        inputPerMTok: llmCfg.LLM_PRICE_INPUT_PER_MTOK,
-        outputPerMTok: llmCfg.LLM_PRICE_OUTPUT_PER_MTOK,
-      });
-      await store.saveFinal(result, metrics, renderReport(result, metrics, { siteUrl: jiraCfg.JIRA_BASE_URL }));
-      await jsonl.close();
+      const { result, metrics } = await session.run();
+      const store = { dir: s.dir, tracePath: join(s.dir, "trace.jsonl") };
 
       out();
       if (result.status === "ABORTED") {
