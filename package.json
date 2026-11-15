@@ -1,0 +1,30 @@
+{
+  "name": "tyn-release-agent",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tool-using AI agent that assesses Jira release readiness",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "verify-jira": "tsx apps/cli/src/index.ts verify-jira",
+    "import": "tsx apps/cli/src/index.ts import",
+    "verify-import": "tsx apps/cli/src/index.ts verify-import",
+    "assess": "tsx apps/cli/src/index.ts assess",
+    "fake-jira": "tsx packages/core/src/testing/fake-jira-server.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "axios-mock-adapter": "2.1.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}
