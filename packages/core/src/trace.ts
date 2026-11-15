@@ -14,6 +14,22 @@ export interface TraceSink {
 
 export const noopTrace: TraceSink = { emit: () => {} };
 
+/** Fans one event out to several sinks (e.g. JSONL file + memory for metrics + live UI). */
+export class TeeTrace implements TraceSink {
+  constructor(private readonly sinks: readonly TraceSink[]) {}
+  emit(event: TraceEvent): void {
+    for (const sink of this.sinks) sink.emit(event);
+  }
+}
+
+/** Calls a function for every event (e.g. console progress, Socket.io broadcast). */
+export class CallbackTrace implements TraceSink {
+  constructor(private readonly onEvent: (event: TraceEvent & { ts: string }) => void) {}
+  emit(event: TraceEvent): void {
+    this.onEvent({ ts: new Date().toISOString(), ...event });
+  }
+}
+
 /** Collects events in memory: handy for tests and for building metrics. */
 export class MemoryTrace implements TraceSink {
   readonly events: (TraceEvent & { ts: string })[] = [];

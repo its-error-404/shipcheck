@@ -11,8 +11,20 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Command } from "commander";
 import {
+  CallbackTrace,
   Importer,
+  JsonlTrace,
+  MemoryTrace,
+  OpenAICompatibleClient,
+  RunStore,
   TRACE_EVENTS,
+  TeeTrace,
+  assess,
+  buildMetrics,
+  loadAssessConfig,
+  loadLlmConfig,
+  newRunId,
+  renderReport,
   JiraReader,
   JiraWriter,
   createJiraHttp,
@@ -133,6 +145,78 @@ program
       console.error(`${report.mismatches.length} mismatch(es) · ${path}`);
       process.exitCode = 1;
     }
+  });
+
+program
+  .command("assess")
+  .description("Run the release-readiness agent against Jira and write the report")
+  .option("-r, --release <release>", "target release (default: ASSESS_RELEASE)")
+  .option("-p, --project <key>", "Jira project key (default: JIRA_PROJECT_KEY)")
+  .option("-l, --label <label>", "dataset scope label (default: ASSESS_SCOPE_LABEL)")
+  .option("-c, --concurrency <n>", "parallel investigations (default: ASSESS_CONCURRENCY, 1 for free tiers)")
+  .option("--resume <runDir>", "reuse decided requirements from a previous run folder")
+  .option("-o, --out <dir>", "base folder for run outputs", "runs")
+  .action(async (o) => {
+    const jiraCfg = loadJiraConfig();
+    const llmCfg = loadLlmConfig();
+    const assessCfg = loadAssessConfig();
+    const release: string = o.release ?? assessCfg.ASSESS_RELEASE;
+    const runId = newRunId(release);
+    const store = await RunStore.create(o.out, runId);
+    const jsonl = new JsonlTrace(store.tracePath);
+    const memory = new MemoryTrace();
+    const progress = new CallbackTrace((e) => {
+      if (e.type === TRACE_EVENTS.toolCall)
+        console.log(`    · [${e.label}] ${e.tool}${e.ok ? "" : " (error)"} ${JSON.stringify(e.args).slice(0, 90)}`);
+      if (e.type === TRACE_EVENTS.llmRetry)
+        console.warn(`    ↻ LLM ${e.reason}; retry ${e.attempt} in ${Math.round(Number(e.delayMs) / 1000)} s`);
+      if (e.type === TRACE_EVENTS.jiraRetry)
+        console.warn(`    ↻ Jira ${e.status}; retry ${e.attempt} in ${e.delayMs} ms`);
+    });
+    const trace = new TeeTrace([jsonl, memory, progress]);
+
+    const http = createJiraHttp({
+      baseUrl: jiraCfg.JIRA_BASE_URL,
+      email: jiraCfg.JIRA_EMAIL,
+      apiToken: jiraCfg.JIRA_API_TOKEN,
+      trace,
+    });
+    const llm = new OpenAICompatibleClient({
+      baseURL: llmCfg.LLM_BASE_URL,
+      apiKey: llmCfg.LLM_API_KEY,
+      model: llmCfg.LLM_MODEL,
+      provider: llmCfg.LLM_PROVIDER,
+      temperature: llmCfg.LLM_TEMPERATURE,
+      maxOutputTokens: llmCfg.LLM_MAX_OUTPUT_TOKENS,
+      reasoningEffort: llmCfg.LLM_REASONING_EFFORT,
+      rpm: llmCfg.LLM_RPM,
+      trace,
+    });
+    const resume = o.resume ? await RunStore.loadResume(o.resume) : undefined;
+    if (resume) console.log(`Resuming: ${resume.size} requirement result(s) found in ${o.resume}`);
+
+    console.log(`Run ${runId}: release ${release} · model ${llm.model} (${llm.provider}) · output ${store.dir}`);
+    const result = await assess({
+      jira: new JiraReader(http),
+      llm,
+      trace,
+      runId,
+      projectKey: o.project ?? jiraCfg.JIRA_PROJECT_KEY,
+      scopeLabel: o.label ?? assessCfg.ASSESS_SCOPE_LABEL,
+      release,
+      concurrency: Number(o.concurrency ?? assessCfg.ASSESS_CONCURRENCY),
+      resume,
+      onRequirement: store.saveRequirement,
+      log: (m) => console.log(m),
+    });
+    const metrics = buildMetrics(result, memory.events, {
+      inputPerMTok: llmCfg.LLM_PRICE_INPUT_PER_MTOK,
+      outputPerMTok: llmCfg.LLM_PRICE_OUTPUT_PER_MTOK,
+    });
+    await store.saveFinal(result, metrics, renderReport(result, metrics, { siteUrl: jiraCfg.JIRA_BASE_URL }));
+    await jsonl.close();
+    console.log(`\nReport: ${join(store.dir, "report.md")}`);
+    if (result.status === "ABORTED") process.exitCode = 2;
   });
 
 program.parseAsync().catch((err: Error) => {

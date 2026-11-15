@@ -233,6 +233,7 @@ export const checkScope = defineTool({
       const entry = await ctx.view.inScope(key);
       ctx.ledger.recordIssue({ key, sourceId: entry?.sourceId, summary: entry?.summary, kind: entry?.kind });
       ctx.ledger.recordComment({ ...c, issueKey: key, sourceId: entry?.sourceId, collapsed: false });
+      if (!ctx.target) return toolError("check_scope needs the target build, which is only known after discovery.");
       const r = checkScopeText(c.body, ctx.target);
       const fmt = r.fields.map((f) => {
         if (f.status === "match") return `  ${f.field}: ${f.found[0]} ✓`;

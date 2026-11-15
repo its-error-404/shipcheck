@@ -8,7 +8,8 @@ import type { ScopedJiraView } from "./jira-view";
 /** Everything a tool may touch. Note: no JiraWriter anywhere in here. */
 export interface ToolContext {
   view: ScopedJiraView;
-  target: Target;
+  /** Target build from the manifest; undefined during discovery (it is not known yet). */
+  target?: Target;
   ledger: EvidenceLedger;
   trace: TraceSink;
   /** The requirement this investigation is assigned (investigation phase only). */
