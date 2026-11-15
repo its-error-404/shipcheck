@@ -1,0 +1,53 @@
+{
+  "key": "KAN-403",
+  "sourceId": "REQ-12",
+  "summary": "[REQ-12] Streaming completion integrity",
+  "criterion": "Every mandatory streaming case must complete without duplicate or missing final messages.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "FAIL",
+  "explanation": "The acceptance criterion requires QA verification in production environment R2.4 with commit b7a91f2 and prompt p7. The linked QA record (REC-5957) explicitly shows a duplicated final message in STREAM-50 (comment 11810), which is a confirmed defect under the target build parameters. Assessment rules state that an unclosed confirmed defect on the target build blocks the relevant acceptance criterion. No evidence exists that STREAM-50 was fixed or verified post-defect discovery.",
+  "evidence": [
+    {
+      "issueKey": "KAN-321",
+      "sourceId": "REC-5957",
+      "issueSummary": "[REC-5957] Streaming QA verification - Streaming completion integrity",
+      "commentId": "11810",
+      "position": "64/64",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Streaming run STREAM-731: release R2.4; commit b7a91f2; service atlas-assistant; environment production; prompt p7. 49 of 50 cases pass. STREAM-50 produced a duplicated final message.",
+      "stance": "supports_fail",
+      "why": "QA result in REC-5957 (comment 11810) shows STREAM-50 produced a duplicated final message in production environment R2.4/b7a91f2/p7"
+    },
+    {
+      "issueKey": "KAN-403",
+      "sourceId": "REQ-12",
+      "issueSummary": "[REQ-12] Streaming completion integrity",
+      "commentId": "12055",
+      "position": "4/5",
+      "recordedAt": "2026-11-07T18:00:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Implementation complete; marking requirement Done. Verification and approvals are tracked in linked issues.",
+      "stance": "not_applicable",
+      "why": "Developer status updates and project tracking do not satisfy QA verification requirements"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 7,
+    "toolCalls": 7,
+    "toolErrors": 2,
+    "inputTokens": 21079,
+    "outputTokens": 4423,
+    "cachedTokens": 18962,
+    "durationMs": 279380,
+    "llmLatencyMs": 277813,
+    "waitedMs": 0
+  }
+}

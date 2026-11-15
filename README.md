@@ -16,15 +16,16 @@ TypeScript · Node.js 22 · no agent framework · any OpenAI-compatible LLM (Gem
 
 ## Results
 
-**Release R2.4: BLOCKED.** Mandatory requirements failed (REQ-02, REQ-03, REQ-05, REQ-08, REQ-09); 3 pass, 5 fail, 4 insufficient evidence.
+**Release R2.4: BLOCKED.** Mandatory requirements failed (REQ-02, REQ-03, REQ-05, REQ-08, REQ-09, REQ-12); 4 pass, 6 fail, 2 insufficient evidence.
 
-| Run                                                           | Model                    | Wall clock | Model calls | Tokens                   | Tool calls | Cost |
-| ------------------------------------------------------------- | ------------------------ | ---------- | ----------- | ------------------------ | ---------- | ---- |
-| [`20261115-110400-R2.4`](runs/20261115-110400-R2.4/report.md) | qwen3:8b (local, Ollama) | 1 h 42 m   | 90          | 411,127 (295,190 cached) | 114        | $0   |
+**Final report: [`runs/20261115-142937-R2.4/report.md`](runs/20261115-142937-R2.4/report.md).** It completes the first full run: two investigations in that run had stopped (the PC slept mid-call; a coverage rejection the small model could not act on, since fixed), so they were rerun with `--resume`, reusing the other ten decisions.
 
-The run folder has `report.md` (human), `report.json` (machine), `trace.jsonl` (every model call, tool call and Jira request), `transcripts/` (each investigation's full conversation) and `metrics.json`. Import evidence is in [`artifacts/import/`](artifacts/import/).
+| Run                                                           | What                                        | Wall clock | Model calls | Tokens                   | Tool calls | Cost |
+| ------------------------------------------------------------- | ------------------------------------------- | ---------- | ----------- | ------------------------ | ---------- | ---- |
+| [`20261115-110400-R2.4`](runs/20261115-110400-R2.4/report.md) | Full run, 12 requirements (10 decided)      | 1 h 42 m   | 90          | 411,127 (295,190 cached) | 114        | $0   |
+| [`20261115-142937-R2.4`](runs/20261115-142937-R2.4/report.md) | `--resume`: REQ-07 and REQ-12, final report | 12 m       | 16          | 58,148 (37,707 cached)   | 21         | $0   |
 
-Two investigations stopped and were reported as `INSUFFICIENT_EVIDENCE` with the reason (REQ-07: the PC slept mid-call; REQ-12: turn budget). What happened, the fix made afterwards, and how to rerun just those two: [docs/18-submission.md](docs/18-submission.md). Run history and lessons: [docs/15-testing-evaluation.md](docs/15-testing-evaluation.md).
+Model: `qwen3:8b` locally via Ollama. Each run folder has `report.md` (human), `report.json` (machine), `trace.jsonl` (every model call, tool call and Jira request), `transcripts/` (each investigation's full conversation) and `metrics.json`. Import evidence is in [`artifacts/import/`](artifacts/import/). Details and analysis: [docs/18-submission.md](docs/18-submission.md). Run history and lessons: [docs/15-testing-evaluation.md](docs/15-testing-evaluation.md).
 
 ---
 

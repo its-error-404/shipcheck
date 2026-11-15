@@ -1,0 +1,72 @@
+{
+  "key": "KAN-266",
+  "sourceId": "REQ-02",
+  "summary": "[REQ-02] Customer document isolation",
+  "criterion": "Every isolation case must pass; any confirmed cross-customer document exposure blocks release.",
+  "mandatory": true,
+  "status": "resumed",
+  "decision": "FAIL",
+  "explanation": "The acceptance criterion requires all isolation cases to pass for R2.4/b7a91f2. KAN-309's retest ISO-318 (R2.4/b7a91f2) confirms cross-customer exposure (ALPHA received BETA-017), which directly blocks the release. KAN-220's QA result references R2.3/42d09ce (wrong release/commit), and REQ-02's 'Done' status lacks verified QA results for the target build. Security approvals and prompt-quality evaluations are also unconfirmed. The confirmed defect ISO-DEF-12 in KAN-309 constitutes a FAIL.",
+  "evidence": [
+    {
+      "issueKey": "KAN-309",
+      "sourceId": "REC-1001",
+      "issueSummary": "[REC-1001] Isolation retest - Customer document isolation",
+      "commentId": "11523",
+      "position": "2/5",
+      "recordedAt": "2026-11-08T11:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Isolation retest ISO-318: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Customer ALPHA received document BETA-017, which belongs to customer BETA. Reopening defect ISO-DEF-12.",
+      "stance": "supports_fail",
+      "why": "Retest ISO-318 confirms cross-customer exposure (ALPHA received BETA-017)"
+    },
+    {
+      "issueKey": "KAN-266",
+      "sourceId": "REQ-02",
+      "issueSummary": "[REQ-02] Customer document isolation",
+      "commentId": "11315",
+      "position": "3/5",
+      "recordedAt": "2026-11-07T18:00:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Implementation complete; marking requirement Done. Verification and approvals are tracked in linked issues.",
+      "stance": "supports_fail",
+      "why": "Developer marked Done without verified QA results for R2.4/b7a91f2"
+    },
+    {
+      "issueKey": "KAN-220",
+      "sourceId": "REC-5825",
+      "issueSummary": "[REC-5825] Isolation verification - Customer document isolation",
+      "commentId": "11083",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T17:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Isolation verification ISO-290: release R2.3; commit 42d09ce; service atlas-assistant; environment production. 40 of 40 isolation cases pass. No cross-customer documents returned.",
+      "stance": "supports_fail",
+      "why": "QA result references R2.3/42d09ce instead of R2.4/b7a91f2"
+    }
+  ],
+  "outstanding": [
+    "Verify if ISO-DEF-12 was closed/verified",
+    "Confirm security approvals for R2.4/b7a91f2"
+  ],
+  "anomalies": [
+    "KAN-220's QA result references R2.3 (not R2.4) and commit 42d09ce (not b7a91f2)",
+    "KAN-309's retest ISO-318 confirms cross-customer exposure (ALPHA received BETA-017)"
+  ],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 6,
+    "toolCalls": 12,
+    "toolErrors": 2,
+    "inputTokens": 21371,
+    "outputTokens": 5115,
+    "cachedTokens": 17690,
+    "durationMs": 240649,
+    "llmLatencyMs": 238685,
+    "waitedMs": 0
+  }
+}

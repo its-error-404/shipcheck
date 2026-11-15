@@ -107,7 +107,9 @@ export const RunView = ({ run, site, running, onResume }: Props) => {
                 <span className="muted small req-meta">
                   {r.status === "decided"
                     ? `${r.agent?.turns ?? 0} turns · ${duration(r.agent?.durationMs)}`
-                    : r.status.replace("_", " ")}
+                    : r.status === "resumed"
+                      ? `reused · ${r.agent?.turns ?? 0} turns`
+                      : r.status.replace("_", " ")}
                 </span>
                 <Badge value={r.decision} />
                 <span className="chev" aria-hidden>

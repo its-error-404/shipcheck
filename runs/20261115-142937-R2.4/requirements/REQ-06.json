@@ -1,0 +1,52 @@
+{
+  "key": "KAN-76",
+  "sourceId": "REQ-06",
+  "summary": "[REQ-06] Production security approval",
+  "criterion": "Security Owner Asha Rao must explicitly approve this release and commit for production.",
+  "mandatory": true,
+  "status": "resumed",
+  "decision": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The Security Owner Asha Rao's explicit approval for production is required. While Asha approved staging (KAN-183) and Ravi Kumar (Engineering Manager) approved production (KAN-122), the Security Owner's production approval is missing. The requirement mandates the Security Owner's explicit production approval, which is not evidenced here.",
+  "evidence": [
+    {
+      "issueKey": "KAN-183",
+      "sourceId": "REC-2828",
+      "issueSummary": "[REC-2828] Security approval - Production security approval",
+      "stance": "inconclusive",
+      "why": "Asha Rao approved staging but not production; production sign-off is pending."
+    },
+    {
+      "issueKey": "KAN-122",
+      "sourceId": "REC-8074",
+      "issueSummary": "[REC-8074] Release sign-off - Production security approval",
+      "stance": "inconclusive",
+      "why": "Ravi Kumar's approval is engineering-focused, not Security Owner's production approval."
+    },
+    {
+      "issueKey": "KAN-76",
+      "sourceId": "REQ-06",
+      "issueSummary": "[REQ-06] Production security approval",
+      "stance": "inconclusive",
+      "why": "No direct evidence of Security Owner's production approval."
+    }
+  ],
+  "outstanding": [
+    "Confirm if Asha Rao's production approval was completed and documented."
+  ],
+  "anomalies": [
+    "KAN-183 comment #10367 mentions 'production sign-off scheduled after penetration-test window' but lacks explicit approval."
+  ],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 3,
+    "toolCalls": 7,
+    "toolErrors": 0,
+    "inputTokens": 8531,
+    "outputTokens": 3648,
+    "cachedTokens": 6672,
+    "durationMs": 152238,
+    "llmLatencyMs": 150201,
+    "waitedMs": 0
+  }
+}

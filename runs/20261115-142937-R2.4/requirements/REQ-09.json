@@ -1,0 +1,60 @@
+{
+  "key": "KAN-146",
+  "sourceId": "REQ-09",
+  "summary": "[REQ-09] Rollback rehearsal",
+  "criterion": "An approved rollback rehearsal must succeed on the target release and production configuration.",
+  "mandatory": true,
+  "status": "resumed",
+  "decision": "FAIL",
+  "explanation": "The acceptance criterion requires all rollback rehearsals to succeed on R2.4/production. While RB-401 (KAN-108) passed, RB-402 (KAN-177) failed with data loss, and no evidence shows this defect was closed. Per the rules, an unclosed confirmed defect on the target build blocks the release.",
+  "evidence": [
+    {
+      "issueKey": "KAN-177",
+      "sourceId": "REC-6198",
+      "issueSummary": "[REC-6198] Rollback rehearsal (second team) - Rollback rehearsal",
+      "commentId": "10860",
+      "position": "2/5",
+      "recordedAt": "2026-11-08T11:30:00+05:30",
+      "actor": "Arjun Mehta",
+      "role": "QA Lead",
+      "excerpt": "Rollback rehearsal RB-402: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Restore completed but 214 session records written during the window were lost. Rehearsal FAILED.",
+      "stance": "supports_fail",
+      "why": "QA Lead Arjun Mehta confirmed rollback rehearsal RB-402 failed with data loss in R2.4/production"
+    },
+    {
+      "issueKey": "KAN-108",
+      "sourceId": "REC-6011",
+      "issueSummary": "[REC-6011] Rollback rehearsal - Rollback rehearsal",
+      "commentId": "10525",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T11:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Rollback rehearsal RB-401: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Previous version restored in 6 minutes; health probes pass; no data loss observed.",
+      "stance": "supports_pass",
+      "why": "QA Lead Priya Nair confirmed rollback rehearsal RB-401 succeeded with no data loss"
+    },
+    {
+      "issueKey": "KAN-146",
+      "sourceId": "REQ-09",
+      "issueSummary": "[REQ-09] Rollback rehearsal",
+      "stance": "not_applicable",
+      "why": "The requirement's acceptance criterion requires all rollback rehearsals to succeed; a failed rehearsal (RB-402) in the target build blocks the release"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 9,
+    "toolCalls": 9,
+    "toolErrors": 2,
+    "inputTokens": 29106,
+    "outputTokens": 5963,
+    "cachedTokens": 26444,
+    "durationMs": 259749,
+    "llmLatencyMs": 257829,
+    "waitedMs": 0
+  }
+}
