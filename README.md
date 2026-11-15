@@ -8,13 +8,23 @@ A tool-using AI agent that investigates Jira and produces an evidence-backed **r
 - The overall decision is computed **in code** from a fixed rule.
 - Runs are **bounded** (turns, tool calls, tokens, time), **traced** (JSONL), **measured** (time, tokens, cost) and **resumable**.
 
-TypeScript · Node.js 22 · no agent framework · any OpenAI-compatible LLM (Gemini, Groq, Ollama, OpenAI, Azure OpenAI) · Jira Cloud REST v3.
+TypeScript · Node.js 22 · no agent framework · any OpenAI-compatible LLM (Gemini, Groq, Ollama, OpenAI, Azure OpenAI) · Jira Cloud REST v3 · CLI, plus a Fastify + Socket.io server and React UI with live progress.
+
+![Shipcheck web UI](docs/images/ui-run.png)
 
 ---
 
 ## Results
 
-The submitted run is in [`runs/`](runs/): `report.md` (human), `report.json` (machine), `trace.jsonl` (every model and tool call), `transcripts/` (full conversation per requirement), `metrics.json`, and `evaluation.md` (scored against hand-derived expected outcomes kept locally; see [eval/README.md](eval/README.md)). See [docs/15-testing-evaluation.md](docs/15-testing-evaluation.md) for the run history and what changed between runs.
+**Release R2.4: BLOCKED.** Mandatory requirements failed (REQ-02, REQ-03, REQ-05, REQ-08, REQ-09); 3 pass, 5 fail, 4 insufficient evidence.
+
+| Run                                                           | Model                    | Wall clock | Model calls | Tokens                   | Tool calls | Cost |
+| ------------------------------------------------------------- | ------------------------ | ---------- | ----------- | ------------------------ | ---------- | ---- |
+| [`20261115-110400-R2.4`](runs/20261115-110400-R2.4/report.md) | qwen3:8b (local, Ollama) | 1 h 42 m   | 90          | 411,127 (295,190 cached) | 114        | $0   |
+
+The run folder has `report.md` (human), `report.json` (machine), `trace.jsonl` (every model call, tool call and Jira request), `transcripts/` (each investigation's full conversation) and `metrics.json`. Import evidence is in [`artifacts/import/`](artifacts/import/).
+
+Two investigations stopped and were reported as `INSUFFICIENT_EVIDENCE` with the reason (REQ-07: the PC slept mid-call; REQ-12: turn budget). What happened, the fix made afterwards, and how to rerun just those two: [docs/18-submission.md](docs/18-submission.md). Run history and lessons: [docs/15-testing-evaluation.md](docs/15-testing-evaluation.md).
 
 ---
 
@@ -25,7 +35,7 @@ The submitted run is in [`runs/`](runs/): `report.md` (human), `report.json` (ma
 ```bash
 npm install
 cp .env.example .env        # fill in Jira + LLM settings (see below)
-npm run check               # typecheck + lint + format + 74 tests (no network needed)
+npm run check               # typecheck + lint + format + 83 tests (no network needed)
 ```
 
 ### 1. Jira
@@ -74,8 +84,18 @@ npm run assess                               # release, label, project from .env
 npm run assess -- --release R2.4 --project KAN
 npm run assess -- --resume runs/<runId>      # continue after a quota stop; decided requirements are reused
 npm run assess -- --only REQ-05              # quick demo: discovery + selected requirements only (not a release decision)
-npm run evaluate -- runs/<runId>             # score against eval/expected-R2.4.json
+npm run evaluate -- runs/<runId>             # score against a local expected-outcomes file (eval/README.md)
 ```
+
+Local models are slow (about 40 s per turn on an 8 GB GPU; a full run is around an hour). Keep the machine awake during a run: if it sleeps, the investigation in progress times out. `--resume` then reruns only the requirements that did not finish.
+
+### 4. Web UI (optional)
+
+```bash
+npm run ui                  # builds the UI and serves it with the API on http://127.0.0.1:4000
+```
+
+Browse runs, open any requirement to see its reasoning and the Jira evidence quoted with actor, role and time, read the agent's own tool calls, and start a run (full or selected requirements) with live progress over Socket.io. The server binds to localhost: it uses your `.env` credentials. Details: [docs/16-server.md](docs/16-server.md), [docs/17-web-ui.md](docs/17-web-ui.md).
 
 ---
 
@@ -109,12 +129,16 @@ packages/core/src/
   jira/        HTTP layer (retry policy), client (reader/writer split), ADF, JQL
   import/      dataset schema, mapping, idempotent importer, verifier
   llm/         provider-neutral types, OpenAI-compatible adapter, rate limiter, scripted test double
-  report/      markdown report, metrics, run store (trace, resume)
+  report/      markdown report, metrics, run store (trace, resume), run reader
+  agent/session.ts  one run end to end, shared by the CLI and the server
   eval/        scoring against expected outcomes
   constants/ models/ utils/ testing/ (fake Jira)
 apps/cli/      commands: verify-jira, import, verify-import, verify-llm, assess, evaluate
+apps/server/   Fastify REST API + Socket.io live runs
+apps/web/      React + Vite UI
+artifacts/     import plan, report and ID map from the real import
 docs/          design documentation
-eval/          expected outcomes (read only by `evaluate`, never by the agent)
+eval/          format of the local expected-outcomes file (read only by `evaluate`, never by the agent)
 inputs/        dataset.json (import input only)
 runs/          assessment outputs
 scripts/       setup-ollama.ps1
@@ -131,5 +155,8 @@ scripts/       setup-ollama.ps1
 | `npm run verify-llm [-- --models a,b]`   | List models; probe tool calling and latency      |
 | `npm run assess [-- --resume runs/<id>]` | Run the agent and write the report               |
 | `npm run evaluate -- runs/<id>`          | Score a run against expected outcomes            |
+| `npm run ui`                             | Build the web UI and serve UI + API (:4000)      |
+| `npm run serve`                          | Serve the API (and a built UI)                   |
+| `npm run web:dev`                        | UI dev server with hot reload (:5173)            |
 | `npm run setup:ollama`                   | Local LLM setup (Windows)                        |
 | `npm run fake-jira`                      | In-memory Jira over HTTP for offline development |

@@ -4,11 +4,11 @@
 
 ## Context
 
-An optional server exposes `POST /api/assess`, run status/report routes, and streams trace events to the React UI via Socket.io.
+An optional server exposes `POST /api/runs`, run list/report/trace/transcript routes, and streams trace events to the React UI via Socket.io.
 
 ## Decision
 
-Fastify with `fastify-type-provider-zod` (reusing the agent's zod schemas), pino logging, and Socket.io attached to the underlying HTTP server.
+Fastify, with Socket.io attached to the underlying HTTP server. The API has only two inputs (`only`, `resumeFrom`), validated by hand against strict patterns; a schema type provider can be added if the API grows. Fastify's built-in pino logger is available (off by default to keep the console readable).
 
 ## Alternatives
 
@@ -16,6 +16,6 @@ Fastify with `fastify-type-provider-zod` (reusing the agent's zod schemas), pino
 
 ## Consequences
 
-- ✅ Schema-first validation from shared zod schemas; structured logs; good TypeScript support.
-- Status: designed, not built (time prioritised for assessment correctness).
+- ✅ Small, typed, quick to start; `app.inject()` makes route tests fast without a network port; Socket.io shares the same HTTP server.
+- Status: built ([16-server.md](../16-server.md)).
 - Note: speed was not a deciding factor; runs are LLM-latency bound.

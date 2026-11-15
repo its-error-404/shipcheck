@@ -28,7 +28,7 @@ Guarantee that every citation in the report refers to something the agent actual
 | INSUFFICIENT_EVIDENCE | Non-empty `outstanding` list (what verification or clarification is missing)                                   |
 | Explanation           | Required                                                                                                       |
 
-The ledger also tracks which issues were **opened** (`get_issue`) and whose **comments were read** (`get_comments`), which the coverage gate uses (Module 7).
+The ledger also tracks which issues were **opened** (`get_issue`) and whose **comments were read** (`get_comments`), which the coverage gate uses (Module 7). A coverage rejection names each missing call exactly, e.g. `get_comments(ref="KAN-403") [REQ-12], get_issue(ref="KAN-321") [REC-5957]`, and tells the model not to resubmit until they are done. Added after the submitted run, where a local model resubmitted the same decision 15 times against a message that only said "open AND read" ([18-submission.md](18-submission.md)).
 
 On failure the tool returns `Decision rejected:` with each problem and an **actionable** hint. When a PASS/FAIL lacks a `comment_id`, or cites an unknown one, the rejection lists the comment ids already read on that issue with actor, role and an excerpt, e.g. `Comment ids you have read on KAN-123: 11523 (#4, <actor> / QA Lead: "…")`. Added after a local model repeatedly failed to fix vague rejections and downgraded a correct decision. The hint (e.g. "comment 99999 was never returned … in this investigation"). The model can fix and resubmit within its budget.
 

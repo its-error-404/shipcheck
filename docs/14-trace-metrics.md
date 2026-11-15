@@ -19,7 +19,7 @@
 | `budget_warning` / `context_elided`       | turns left / results elided                                                                                    |
 | `requirement_result`                      | key, decision, status                                                                                          |
 
-Sinks compose: `TeeTrace([JsonlTrace, MemoryTrace, CallbackTrace])` writes the file, keeps events for metrics, and prints live progress (the bonus UI would add a Socket.io sink).
+Sinks compose: `TeeTrace([JsonlTrace, MemoryTrace, CallbackTrace])` writes the file, keeps events for metrics, and prints live progress. The server adds a Socket.io sink that broadcasts each event to the web UI and replays the active run's events to clients that connect mid-run ([16-server.md](16-server.md)).
 
 `runs/<runId>/transcripts/<REQ>.json` holds the full conversation per investigation.
 

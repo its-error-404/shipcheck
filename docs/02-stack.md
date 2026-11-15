@@ -28,7 +28,7 @@ Choose the language, runtime, libraries and model provider, with explicit trade-
 | Tests                  | Vitest                                                                             |
 | Lint/format            | ESLint (typescript-eslint) + Prettier, enforced by `npm run check`                 |
 | Bonus server           | Fastify + Socket.io (live trace streaming)                                         |
-| Bonus UI               | React + Vite + TanStack Query                                                      |
+| Bonus UI               | React + Vite, plain CSS, axios (TanStack Query not needed for three endpoints)     |
 
 ## 3. Decisions and alternatives
 

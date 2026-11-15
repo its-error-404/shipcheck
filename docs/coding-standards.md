@@ -13,9 +13,12 @@ packages/core/src/
   import/      Dataset loading, mapping, importer, verifier
   tools/       Agent tools, scoped Jira view, parsers, registry
   llm/         Provider-neutral types, adapters, rate limiter, scripted test double
-  agent/       Agent loop (orchestrator, prompts, report added in Modules 11–14)
+  agent/       Agent loop, orchestrator, prompts, manifest parsing, overall decision, session (one run end to end)
+  report/      Markdown report, metrics, run store, run reader
   testing/     Fake Jira (in-memory + HTTP) for tests and offline demos
 apps/cli/      Thin CLI over @shipcheck/core: commands/ (one module per command), ui.ts (styling), progress.ts (live progress from trace events)
+apps/server/   Fastify app (app.ts), routes/, live runs over Socket.io (live.ts), constants.ts
+apps/web/      React UI: components/, api.ts (axios), useLive.ts (Socket.io), styles.css; imports backend types only
 ```
 
 **Rule of placement:** a type, constant or helper used by more than one module lives in `models/`, `constants/` or `utils/`. One used by a single module stays next to its code (e.g. the description markers in `import/mapping.ts`).
