@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import type { AdfDoc } from "./adf";
+import { JIRA_API, JIRA_LIMITS } from "../constants/jira";
 import { JiraNotFoundError } from "./errors";
 
 /** The subset of Jira's issue shape we rely on. */
@@ -50,16 +51,18 @@ export class JiraReader {
   constructor(protected readonly http: AxiosInstance) {}
 
   async myself(): Promise<{ accountId: string; displayName: string; emailAddress?: string }> {
-    return (await this.http.get("/rest/api/3/myself")).data;
+    return (await this.http.get(`${JIRA_API}/myself`)).data;
   }
 
   async getProject(key: string): Promise<{ id: string; key: string; name: string }> {
-    return (await this.http.get(`/rest/api/3/project/${encodeURIComponent(key)}`)).data;
+    return (await this.http.get(`${JIRA_API}/project/${encodeURIComponent(key)}`)).data;
   }
 
   /** Projects visible to the current user (used to give helpful errors). */
   async listProjects(): Promise<{ key: string; name: string }[]> {
-    const data = (await this.http.get("/rest/api/3/project/search", { params: { maxResults: 50 } })).data;
+    const data = (
+      await this.http.get(`${JIRA_API}/project/search`, { params: { maxResults: JIRA_LIMITS.projectsPage } })
+    ).data;
     return (data.values ?? []).map((p: { key: string; name: string }) => ({ key: p.key, name: p.name }));
   }
 
@@ -70,7 +73,9 @@ export class JiraReader {
     } catch (e) {
       if (!(e instanceof JiraNotFoundError)) throw e;
       const projects = await this.listProjects().catch(() => []);
-      const list = projects.length ? projects.map((p) => `${p.key} ("${p.name}")`).join(", ") : "none visible to this account";
+      const list = projects.length
+        ? projects.map((p) => `${p.key} ("${p.name}")`).join(", ")
+        : "none visible to this account";
       throw new JiraNotFoundError(
         `Project "${key}" not found. Projects you can access: ${list}. Set JIRA_PROJECT_KEY in .env to the right key (shown in the project URL / Project settings).`,
         404,
@@ -80,8 +85,8 @@ export class JiraReader {
 
   async getIssueTypes(projectKey: string): Promise<{ id: string; name: string }[]> {
     const data = (
-      await this.http.get(`/rest/api/3/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes`, {
-        params: { maxResults: 100 },
+      await this.http.get(`${JIRA_API}/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes`, {
+        params: { maxResults: JIRA_LIMITS.createMetaPage },
       })
     ).data;
     return data.issueTypes ?? data.values ?? [];
@@ -90,8 +95,8 @@ export class JiraReader {
   async getCreateFields(projectKey: string, issueTypeId: string): Promise<string[]> {
     const data = (
       await this.http.get(
-        `/rest/api/3/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes/${encodeURIComponent(issueTypeId)}`,
-        { params: { maxResults: 200 } },
+        `${JIRA_API}/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes/${encodeURIComponent(issueTypeId)}`,
+        { params: { maxResults: JIRA_LIMITS.createMetaPage } },
       )
     ).data;
     const fields: { fieldId?: string; key?: string }[] = data.fields ?? data.values ?? [];
@@ -99,7 +104,7 @@ export class JiraReader {
   }
 
   async getLinkTypes(): Promise<{ id: string; name: string; inward: string; outward: string }[]> {
-    return (await this.http.get("/rest/api/3/issueLinkType")).data.issueLinkTypes ?? [];
+    return (await this.http.get(`${JIRA_API}/issueLinkType`)).data.issueLinkTypes ?? [];
   }
 
   /**
@@ -107,18 +112,23 @@ export class JiraReader {
    * endpoint was retired by Atlassian; this one pages with nextPageToken.
    * Exposed as an async generator so callers never handle paging.
    */
-  async *searchJql(jql: string, fields: string[], pageSize = 100): AsyncGenerator<JiraIssue> {
+  async *searchJql(
+    jql: string,
+    fields: string[],
+    pageSize: number = JIRA_LIMITS.searchPage,
+  ): AsyncGenerator<JiraIssue> {
     let nextPageToken: string | undefined;
     do {
       const data = (
         await this.http.post(
-          "/rest/api/3/search/jql",
+          `${JIRA_API}/search/jql`,
           { jql, fields, maxResults: pageSize, ...(nextPageToken ? { nextPageToken } : {}) },
           { idempotent: true },
         )
       ).data as { issues?: JiraIssue[]; nextPageToken?: string; isLast?: boolean };
       for (const issue of data.issues ?? []) yield issue;
-      nextPageToken = data.isLast === false || (data.isLast === undefined && data.nextPageToken) ? data.nextPageToken : undefined;
+      nextPageToken =
+        data.isLast === false || (data.isLast === undefined && data.nextPageToken) ? data.nextPageToken : undefined;
     } while (nextPageToken);
   }
 
@@ -130,7 +140,7 @@ export class JiraReader {
 
   async getIssue(key: string, fields: string[]): Promise<JiraIssue> {
     return (
-      await this.http.get(`/rest/api/3/issue/${encodeURIComponent(key)}`, {
+      await this.http.get(`${JIRA_API}/issue/${encodeURIComponent(key)}`, {
         params: { fields: fields.join(",") },
       })
     ).data;
@@ -142,8 +152,8 @@ export class JiraReader {
     let startAt = 0;
     for (;;) {
       const data = (
-        await this.http.get(`/rest/api/3/issue/${encodeURIComponent(key)}/comment`, {
-          params: { startAt, maxResults: 100, orderBy: "created" },
+        await this.http.get(`${JIRA_API}/issue/${encodeURIComponent(key)}/comment`, {
+          params: { startAt, maxResults: JIRA_LIMITS.commentsPage, orderBy: "created" },
         })
       ).data as { comments: JiraComment[]; total: number };
       out.push(...data.comments);
@@ -153,7 +163,7 @@ export class JiraReader {
   }
 
   async getTransitions(key: string): Promise<JiraTransition[]> {
-    return (await this.http.get(`/rest/api/3/issue/${encodeURIComponent(key)}/transitions`)).data.transitions ?? [];
+    return (await this.http.get(`${JIRA_API}/issue/${encodeURIComponent(key)}/transitions`)).data.transitions ?? [];
   }
 }
 
@@ -161,10 +171,14 @@ export class JiraReader {
 export class JiraWriter extends JiraReader {
   /** POST /rest/api/3/issue/bulk (max 50 per call). */
   async bulkCreate(issues: { fields: Record<string, unknown> }[]): Promise<BulkCreateResult> {
-    if (issues.length > 50) throw new Error("bulkCreate accepts at most 50 issues per call");
-    const data = (await this.http.post("/rest/api/3/issue/bulk", { issueUpdates: issues })).data as {
+    if (issues.length > JIRA_LIMITS.bulkCreate)
+      throw new Error(`bulkCreate accepts at most ${JIRA_LIMITS.bulkCreate} issues per call`);
+    const data = (await this.http.post(`${JIRA_API}/issue/bulk`, { issueUpdates: issues })).data as {
       issues?: { id: string; key: string }[];
-      errors?: { failedElementNumber: number; elementErrors?: { errorMessages?: string[]; errors?: Record<string, string> } }[];
+      errors?: {
+        failedElementNumber: number;
+        elementErrors?: { errorMessages?: string[]; errors?: Record<string, string> };
+      }[];
     };
     const failed = new Map<number, string>();
     for (const e of data.errors ?? []) {
@@ -181,12 +195,12 @@ export class JiraWriter extends JiraReader {
   }
 
   async addComment(key: string, body: AdfDoc): Promise<{ id: string }> {
-    return (await this.http.post(`/rest/api/3/issue/${encodeURIComponent(key)}/comment`, { body })).data;
+    return (await this.http.post(`${JIRA_API}/issue/${encodeURIComponent(key)}/comment`, { body })).data;
   }
 
   /** Creates a link. For "Relates" the semantics are symmetric; direction is kept in the description. */
   async createLink(typeName: string, outwardKey: string, inwardKey: string): Promise<void> {
-    await this.http.post("/rest/api/3/issueLink", {
+    await this.http.post(`${JIRA_API}/issueLink`, {
       type: { name: typeName },
       outwardIssue: { key: outwardKey },
       inwardIssue: { key: inwardKey },
@@ -194,7 +208,7 @@ export class JiraWriter extends JiraReader {
   }
 
   async transition(key: string, transitionId: string): Promise<void> {
-    await this.http.post(`/rest/api/3/issue/${encodeURIComponent(key)}/transitions`, {
+    await this.http.post(`${JIRA_API}/issue/${encodeURIComponent(key)}/transitions`, {
       transition: { id: transitionId },
     });
   }

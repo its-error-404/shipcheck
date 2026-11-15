@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -13,18 +11,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "paths": {
-      "@tyn/core": [
-        "./packages/core/src/index.ts"
-      ]
+      "@tyn/core": ["./packages/core/src/index.ts"]
     }
   },
-  "include": [
-    "packages/*/src",
-    "packages/*/test",
-    "apps/*/src"
-  ]
+  "include": ["packages/*/src", "packages/*/test", "apps/*/src"]
 }

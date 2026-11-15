@@ -10,38 +10,12 @@
 import { adfToText } from "../jira/adf";
 import type { JiraIssue, JiraReader } from "../jira/client";
 import { scopedJql } from "../jira/jql";
-import { parseDescription, parseImportedComment, sourceIdFromLabels } from "../import/mapping";
+import { LABEL_PREFIX } from "../constants/labels";
+import { JIRA_LIMITS } from "../constants/jira";
+import { parseDescription, parseImportedComment } from "../import/mapping";
+import type { CommentView, IssueView, ScopeEntry } from "../models/jira-view";
+import { labelValue, sourceIdFromLabels } from "../utils/labels";
 import { parseRecordedHeader } from "./parse";
-
-export interface ScopeEntry {
-  key: string;
-  sourceId?: string;
-  kind?: string;
-  release?: string;
-  summary: string;
-  status?: string;
-}
-
-export interface IssueView extends ScopeEntry {
-  recordedStatus?: string;
-  description: string;
-  declaredLinks: string[];
-  links: { key: string; sourceId?: string; summary: string; direction: "outgoing" | "incoming" }[];
-  hiddenLinks: number;
-}
-
-export interface CommentView {
-  id: string;
-  position?: number;
-  total?: number;
-  recordedAt?: string;
-  actor?: string;
-  role?: string;
-  body: string;
-}
-
-const labelValue = (labels: string[] | undefined, prefix: string) =>
-  labels?.find((l) => l.startsWith(prefix))?.slice(prefix.length);
 
 export class ScopedJiraView {
   private scope?: Map<string, ScopeEntry>;
@@ -77,8 +51,8 @@ export class ScopedJiraView {
     return {
       key: i.key,
       sourceId: sourceIdFromLabels(i.fields.labels),
-      kind: labelValue(i.fields.labels, "kind-"),
-      release: labelValue(i.fields.labels, "rel-"),
+      kind: labelValue(i.fields.labels, LABEL_PREFIX.kind),
+      release: labelValue(i.fields.labels, LABEL_PREFIX.release),
       summary: i.fields.summary ?? "",
       status: i.fields.status?.name,
     };
@@ -98,7 +72,11 @@ export class ScopedJiraView {
 
   async search(inner: string | undefined, limit: number): Promise<ScopeEntry[]> {
     const out: ScopeEntry[] = [];
-    for await (const i of this.jira.searchJql(this.jql(inner), ["summary", "labels", "status"], Math.min(limit, 100))) {
+    for await (const i of this.jira.searchJql(
+      this.jql(inner),
+      ["summary", "labels", "status"],
+      Math.min(limit, JIRA_LIMITS.searchPage),
+    )) {
       out.push(this.entryFrom(i));
       if (out.length >= limit) break;
     }

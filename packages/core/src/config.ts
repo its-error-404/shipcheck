@@ -12,15 +12,18 @@ export const JiraConfigSchema = z.object({
     .transform((u) => u.replace(/\/+$/, "")),
   JIRA_EMAIL: z.string().email("JIRA_EMAIL must be your Atlassian account email"),
   JIRA_API_TOKEN: z.string().min(10, "JIRA_API_TOKEN is missing or too short"),
-  JIRA_PROJECT_KEY: z.string().regex(/^[A-Z][A-Z0-9_]+$/, "JIRA_PROJECT_KEY must be an uppercase project key").default("TYN"),
+  JIRA_PROJECT_KEY: z
+    .string()
+    .regex(/^[A-Z][A-Z0-9_]+$/, "JIRA_PROJECT_KEY must be an uppercase project key")
+    .default("TYN"),
   JIRA_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(4),
 });
 export type JiraConfig = z.infer<typeof JiraConfigSchema>;
 
-export function loadJiraConfig(env: NodeJS.ProcessEnv = process.env): JiraConfig {
+export const loadJiraConfig = (env: NodeJS.ProcessEnv = process.env): JiraConfig => {
   const parsed = JiraConfigSchema.safeParse(env);
   if (!parsed.success) {
     throw new Error(`Invalid Jira configuration (check your .env):\n${z.prettifyError(parsed.error)}`);
   }
   return parsed.data;
-}
+};

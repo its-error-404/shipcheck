@@ -3,29 +3,39 @@
  * Every result is compact text, capped, and recorded in the evidence ledger.
  */
 import { z } from "zod";
+import { TOOL_LIMITS } from "../constants/tools";
 import { JiraError } from "../jira/errors";
 import { jqlString } from "../jira/jql";
 import { checkScopeText, noiseSignature } from "./parse";
-import type { CommentView, ScopeEntry } from "./jira-view";
+import { RECORD_KINDS } from "../models/dataset";
+import type { CommentView, ScopeEntry } from "../models/jira-view";
+import { kindLabel, releaseLabel, srcLabel } from "../utils/labels";
 import { capped, defineTool, toolError, type ToolContext, type ToolResult } from "./types";
 
 const row = (e: ScopeEntry) =>
   `${e.key} · ${e.sourceId ?? "?"} · ${e.kind ?? "?"} · filed ${e.release ?? "?"} · Jira status ${e.status ?? "?"} · "${e.summary}"`;
 
 /** Wraps a tool body so Jira failures become readable tool errors instead of crashes. */
-async function guarded(fn: () => Promise<ToolResult>): Promise<ToolResult> {
+const guarded = async (fn: () => Promise<ToolResult>): Promise<ToolResult> => {
   try {
     return await fn();
   } catch (e) {
-    if (e instanceof JiraError) return toolError(`Jira call failed: ${e.message}`, "Retry later or continue with the evidence you have.");
+    if (e instanceof JiraError)
+      return toolError(`Jira call failed: ${e.message}`, "Retry later or continue with the evidence you have.");
     throw e;
   }
-}
+};
 
-async function resolveOrError(ctx: ToolContext, ref: string): Promise<string | ToolResult> {
+const resolveOrError = async (ctx: ToolContext, ref: string): Promise<string | ToolResult> => {
   const key = await ctx.view.resolve(ref);
-  return key ?? toolError(`${ref} is not an issue in the assessment scope.`, "Use search_issues to find the right key or source ID.");
-}
+  return (
+    key ??
+    toolError(
+      `${ref} is not an issue in the assessment scope.`,
+      "Use search_issues to find the right key or source ID.",
+    )
+  );
+};
 
 // ── search_issues ──────────────────────────────────────────────────────────
 export const searchIssues = defineTool({
@@ -35,24 +45,44 @@ export const searchIssues = defineTool({
     "All filters are optional and combined with AND. Returns compact rows: key · source ID · kind · release label · Jira status · summary. " +
     "Note: the 'filed' release label is how a record was filed; the scope of a result is stated inside its comments.",
   schema: z.object({
-    text: z.string().max(200).optional().describe("Full-text search over summary, description and comments"),
-    source_ids: z.array(z.string()).max(25).optional().describe("Exact source IDs, e.g. ['REQ-04', 'REC-6024']"),
-    kind: z.enum(["manifest", "requirement", "evidence", "work"]).optional(),
+    text: z
+      .string()
+      .max(TOOL_LIMITS.searchTextMax)
+      .optional()
+      .describe("Full-text search over summary, description and comments"),
+    source_ids: z
+      .array(z.string())
+      .max(TOOL_LIMITS.sourceIdsMax)
+      .optional()
+      .describe("Exact source IDs, e.g. ['REQ-04', 'REC-6024']"),
+    kind: z.enum(RECORD_KINDS).optional(),
     release: z.string().optional().describe("Release label the record was filed under, e.g. 'R2.4'"),
-    limit: z.number().int().min(1).max(25).optional().describe("Max rows (default 15)"),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(TOOL_LIMITS.searchMax)
+      .optional()
+      .describe(`Max rows (default ${TOOL_LIMITS.searchDefault})`),
   }),
   run: (a, ctx) =>
     guarded(async () => {
       const clauses: string[] = [];
       if (a.text) clauses.push(`text ~ ${jqlString(a.text)}`);
-      if (a.source_ids?.length) clauses.push(`labels in (${a.source_ids.map((s) => jqlString(`src-${s.trim()}`)).join(", ")})`);
-      if (a.kind) clauses.push(`labels = ${jqlString(`kind-${a.kind}`)}`);
-      if (a.release) clauses.push(`labels = ${jqlString(`rel-${a.release.trim()}`)}`);
-      const limit = a.limit ?? 15;
+      if (a.source_ids?.length)
+        clauses.push(`labels in (${a.source_ids.map((s) => jqlString(srcLabel(s))).join(", ")})`);
+      if (a.kind) clauses.push(`labels = ${jqlString(kindLabel(a.kind))}`);
+      if (a.release) clauses.push(`labels = ${jqlString(releaseLabel(a.release))}`);
+      const limit = a.limit ?? TOOL_LIMITS.searchDefault;
       const rows = await ctx.view.search(clauses.join(" AND ") || undefined, limit);
-      for (const r of rows) ctx.ledger.recordIssue({ key: r.key, sourceId: r.sourceId, summary: r.summary, kind: r.kind });
+      for (const r of rows)
+        ctx.ledger.recordIssue({ key: r.key, sourceId: r.sourceId, summary: r.summary, kind: r.kind });
       if (rows.length === 0) return { content: "No matching issues in scope." };
-      return { content: capped(`${rows.length} issue(s)${rows.length === limit ? ` (limit ${limit}; refine to see more)` : ""}:\n${rows.map(row).join("\n")}`) };
+      return {
+        content: capped(
+          `${rows.length} issue(s)${rows.length === limit ? ` (limit ${limit}; refine to see more)` : ""}:\n${rows.map(row).join("\n")}`,
+        ),
+      };
     }),
 });
 
@@ -73,7 +103,10 @@ export const getIssue = defineTool({
       const lines = [
         `${v.key} · source ${v.sourceId ?? "?"} · kind ${v.kind ?? "?"} · filed under ${v.release ?? "?"} · recorded status ${v.recordedStatus ?? "?"} · Jira status ${v.status ?? "?"}`,
         `Summary: ${v.summary}`,
-        `Description:\n${v.description.split("\n").map((l) => `  ${l}`).join("\n")}`,
+        `Description:\n${v.description
+          .split("\n")
+          .map((l) => `  ${l}`)
+          .join("\n")}`,
         `Links (${v.links.length}):`,
         ...(v.links.length
           ? v.links.map((l) =>
@@ -92,19 +125,19 @@ export const getIssue = defineTool({
 // ── get_comments ───────────────────────────────────────────────────────────
 type Entry = { kind: "one"; c: CommentView } | { kind: "run"; cs: CommentView[] };
 
-function collapse(comments: CommentView[]): Entry[] {
+const collapse = (comments: CommentView[]): Entry[] => {
   const out: Entry[] = [];
   let i = 0;
   while (i < comments.length) {
     const sig = noiseSignature(comments[i]!.actor, comments[i]!.body);
     let j = i + 1;
     while (j < comments.length && noiseSignature(comments[j]!.actor, comments[j]!.body) === sig) j++;
-    if (j - i >= 3) out.push({ kind: "run", cs: comments.slice(i, j) });
+    if (j - i >= TOOL_LIMITS.collapseMinRun) out.push({ kind: "run", cs: comments.slice(i, j) });
     else for (let k = i; k < j; k++) out.push({ kind: "one", c: comments[k]! });
     i = j;
   }
   return out;
-}
+};
 
 const who = (c: CommentView) => `${c.actor ?? "unknown actor"} (${c.role ?? "unknown role"})`;
 
@@ -119,8 +152,18 @@ export const getComments = defineTool({
     ref: z.string().describe("Jira key or source ID"),
     order: z.enum(["recorded", "source"]).optional().describe("Default 'recorded'"),
     offset: z.number().int().min(0).optional().describe("Entry offset for paging (default 0)"),
-    limit: z.number().int().min(1).max(30).optional().describe("Entries per page (default 15)"),
-    contains: z.string().max(100).optional().describe("Only comments whose text contains this (case-insensitive)"),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(TOOL_LIMITS.commentsMax)
+      .optional()
+      .describe(`Entries per page (default ${TOOL_LIMITS.commentsDefault})`),
+    contains: z
+      .string()
+      .max(TOOL_LIMITS.containsMax)
+      .optional()
+      .describe("Only comments whose text contains this (case-insensitive)"),
   }),
   run: (a, ctx) =>
     guarded(async () => {
@@ -131,13 +174,15 @@ export const getComments = defineTool({
       const total = comments.length;
       const order = a.order ?? "recorded";
       if (order === "recorded")
-        comments.sort((x, y) => (x.recordedAt ?? "").localeCompare(y.recordedAt ?? "") || (x.position ?? 0) - (y.position ?? 0));
+        comments.sort(
+          (x, y) => (x.recordedAt ?? "").localeCompare(y.recordedAt ?? "") || (x.position ?? 0) - (y.position ?? 0),
+        );
       else comments.sort((x, y) => (x.position ?? 0) - (y.position ?? 0));
       if (a.contains) comments = comments.filter((c) => c.body.toLowerCase().includes(a.contains!.toLowerCase()));
 
       const entries = collapse(comments);
       const offset = a.offset ?? 0;
-      const limit = a.limit ?? 15;
+      const limit = a.limit ?? TOOL_LIMITS.commentsDefault;
       const page = entries.slice(offset, offset + limit);
       ctx.ledger.recordIssue({ key, sourceId: entry?.sourceId, summary: entry?.summary, kind: entry?.kind });
 
@@ -146,14 +191,17 @@ export const getComments = defineTool({
         if (e.kind === "one") {
           const c = e.c;
           ctx.ledger.recordComment({ ...c, issueKey: key, sourceId: entry?.sourceId, collapsed: false });
-          lines.push(`[comment ${c.id} · #${c.position ?? "?"}/${c.total ?? "?"} · recorded ${c.recordedAt ?? "?"} · ${who(c)}]\n${c.body}`);
+          lines.push(
+            `[comment ${c.id} · #${c.position ?? "?"}/${c.total ?? "?"} · recorded ${c.recordedAt ?? "?"} · ${who(c)}]\n${c.body}`,
+          );
         } else {
           const first = e.cs[0]!;
           const last = e.cs[e.cs.length - 1]!;
-          for (const c of e.cs) ctx.ledger.recordComment({ ...c, issueKey: key, sourceId: entry?.sourceId, collapsed: true });
+          for (const c of e.cs)
+            ctx.ledger.recordComment({ ...c, issueKey: key, sourceId: entry?.sourceId, collapsed: true });
           lines.push(
             `⋯ [${e.cs.length} near-identical comments collapsed · ids ${first.id}…${last.id} · recorded ${first.recordedAt ?? "?"} → ${last.recordedAt ?? "?"} · ${who(first)}]\n` +
-              `  e.g. "${first.body.slice(0, 160)}"`,
+              `  e.g. "${first.body.slice(0, TOOL_LIMITS.collapseExampleChars)}"`,
           );
         }
       }

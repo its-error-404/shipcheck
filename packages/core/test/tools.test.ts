@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { loadDataset, type Dataset } from "../src/import/dataset";
+import { loadDataset } from "../src/import/dataset";
+import type { Dataset } from "../src/models/dataset";
 import { Importer } from "../src/import/importer";
-import { JiraReader } from "../src/jira/client";
+import { type JiraReader } from "../src/jira/client";
 import { EvidenceLedger } from "../src/ledger";
 import { ScopedJiraView } from "../src/tools/jira-view";
 import { executeTool, INVESTIGATION_TOOLS, DISCOVERY_TOOLS, toolSpecs } from "../src/tools/registry";
@@ -25,7 +26,7 @@ beforeAll(async () => {
   keyOf = (sid) => report.map[sid]!;
 });
 
-function ctx(requirement?: string): ToolContext {
+const ctx = (requirement?: string): ToolContext => {
   return {
     view: new ScopedJiraView(reader, "TYN", ds.dataset_label),
     target: ds.target,
@@ -33,7 +34,7 @@ function ctx(requirement?: string): ToolContext {
     trace: noopTrace,
     requirementKey: requirement ? keyOf(requirement) : undefined,
   };
-}
+};
 const run = (c: ToolContext, name: string, args: unknown) => executeTool(INVESTIGATION_TOOLS, name, args, c);
 
 describe("search_issues", () => {
@@ -94,10 +95,10 @@ describe("get_comments", () => {
 });
 
 describe("check_scope", () => {
-  async function commentId(c: ToolContext, ref: string, needle: string) {
+  const commentId = async (c: ToolContext, ref: string, needle: string) => {
     await run(c, "get_comments", { ref, limit: 30 });
     return [...c.ledger.comments.values()].find((x) => x.body.includes(needle))!.id;
-  }
+  };
   it("flags the staging latency run as environment mismatch", async () => {
     const c = ctx();
     const r = await run(c, "check_scope", { ref: "REC-1028", comment_id: await commentId(c, "REC-1028", "PERF-812") });
@@ -110,18 +111,33 @@ describe("check_scope", () => {
   });
   it("reports prompt as not stated on the EVAL-55 completion (model must connect the p6 harness note)", async () => {
     const c = ctx();
-    const r = await run(c, "check_scope", { ref: "REC-4323", comment_id: await commentId(c, "REC-4323", "EVAL-55 completed") });
+    const r = await run(c, "check_scope", {
+      ref: "REC-4323",
+      comment_id: await commentId(c, "REC-4323", "EVAL-55 completed"),
+    });
     expect(r.content).toMatch(/not stated: prompt/);
   });
   it("reads approval scope wording", () => {
-    const s = checkScopeText("Approved: release R2.4, commit b7a91f2, service atlas-assistant. Approval scope: staging.", ds.target);
+    const s = checkScopeText(
+      "Approved: release R2.4, commit b7a91f2, service atlas-assistant. Approval scope: staging.",
+      ds.target,
+    );
     expect(s.mismatched).toEqual(["environment"]);
-    const p = checkScopeText("Approved release R2.4, commit b7a91f2, service atlas-assistant for production from an engineering standpoint.", ds.target);
+    const p = checkScopeText(
+      "Approved release R2.4, commit b7a91f2, service atlas-assistant for production from an engineering standpoint.",
+      ds.target,
+    );
     expect(p.verdict).toBe("MATCH_ON_STATED_FIELDS");
   });
   it("catches the wrong service and wrong release", () => {
-    expect(checkScopeText("release R2.4; commit b7a91f2; service support-widget; environment production.", ds.target).mismatched).toEqual(["service"]);
-    expect(checkScopeText("release R2.3; commit 42d09ce; service atlas-assistant; environment production.", ds.target).mismatched).toEqual(["release", "commit"]);
+    expect(
+      checkScopeText("release R2.4; commit b7a91f2; service support-widget; environment production.", ds.target)
+        .mismatched,
+    ).toEqual(["service"]);
+    expect(
+      checkScopeText("release R2.3; commit 42d09ce; service atlas-assistant; environment production.", ds.target)
+        .mismatched,
+    ).toEqual(["release", "commit"]);
   });
 });
 
@@ -142,19 +158,28 @@ describe("record_decision + ledger", () => {
     const c = ctx("REQ-11");
     await run(c, "get_issue", { ref: "REQ-11" });
     const pass = await run(c, "record_decision", {
-      requirement_key: "REQ-11", decision: "PASS", explanation: "Requirement is marked Done in Jira so it passes.",
+      requirement_key: "REQ-11",
+      decision: "PASS",
+      explanation: "Requirement is marked Done in Jira so it passes.",
       evidence: [{ issue_key: keyOf("REQ-11"), stance: "supports_pass", why: "status Done" }],
     });
     expect(pass.content).toMatch(/PASS requires at least one cited comment/);
     const ins = await run(c, "record_decision", {
-      requirement_key: "REQ-11", decision: "INSUFFICIENT_EVIDENCE", explanation: "Only a developer claim exists for this build.", evidence: [],
+      requirement_key: "REQ-11",
+      decision: "INSUFFICIENT_EVIDENCE",
+      explanation: "Only a developer claim exists for this build.",
+      evidence: [],
     });
     expect(ins.content).toMatch(/requires 'outstanding'/);
   });
   it("rejects deciding a different requirement than assigned", async () => {
     const c = ctx("REQ-07");
     const r = await run(c, "record_decision", {
-      requirement_key: "REQ-05", decision: "INSUFFICIENT_EVIDENCE", explanation: "Trying to decide another requirement here.", evidence: [], outstanding: ["x"],
+      requirement_key: "REQ-05",
+      decision: "INSUFFICIENT_EVIDENCE",
+      explanation: "Trying to decide another requirement here.",
+      evidence: [],
+      outstanding: ["x"],
     });
     expect(r.content).toMatch(/must be/);
   });
@@ -164,9 +189,12 @@ describe("record_decision + ledger", () => {
     await run(c, "get_comments", { ref: "REC-9745" });
     const id = [...c.ledger.comments.values()].find((x) => x.body.includes("REDACT-901"))!.id;
     const r = await run(c, "record_decision", {
-      requirement_key: "REQ-07", decision: "PASS",
+      requirement_key: "REQ-07",
+      decision: "PASS",
       explanation: "REDACT-901 explicitly supersedes REDACT-870 and passes 28 of 28 on the target build.",
-      evidence: [{ issue_key: keyOf("REC-9745"), comment_id: id, stance: "supports_pass", why: "superseding retest passes" }],
+      evidence: [
+        { issue_key: keyOf("REC-9745"), comment_id: id, stance: "supports_pass", why: "superseding retest passes" },
+      ],
     });
     expect(r.isError).toBeFalsy();
     expect(r.terminal).toMatchObject({ decision: "PASS" });
@@ -177,11 +205,26 @@ describe("submit_plan", () => {
   it("accepts the manifest's 12 requirements and rejects incomplete or wrong plans", async () => {
     const c = ctx();
     const all = Array.from({ length: 12 }, (_, i) => `REQ-${String(i + 1).padStart(2, "0")}`);
-    const ok = await executeTool(DISCOVERY_TOOLS, "submit_plan", { manifest_key: "MANIFEST", requirement_keys: all }, c);
+    const ok = await executeTool(
+      DISCOVERY_TOOLS,
+      "submit_plan",
+      { manifest_key: "MANIFEST", requirement_keys: all },
+      c,
+    );
     expect(ok.terminal).toBeTruthy();
-    const partial = await executeTool(DISCOVERY_TOOLS, "submit_plan", { manifest_key: "MANIFEST", requirement_keys: all.slice(0, 10) }, c);
+    const partial = await executeTool(
+      DISCOVERY_TOOLS,
+      "submit_plan",
+      { manifest_key: "MANIFEST", requirement_keys: all.slice(0, 10) },
+      c,
+    );
     expect(partial.content).toMatch(/did not include/);
-    const wrong = await executeTool(DISCOVERY_TOOLS, "submit_plan", { manifest_key: "MANIFEST", requirement_keys: [...all, "REC-6024"] }, c);
+    const wrong = await executeTool(
+      DISCOVERY_TOOLS,
+      "submit_plan",
+      { manifest_key: "MANIFEST", requirement_keys: [...all, "REC-6024"] },
+      c,
+    );
     expect(wrong.content).toMatch(/not a requirement/);
   });
 });
@@ -189,7 +232,13 @@ describe("submit_plan", () => {
 describe("tool specs", () => {
   it("produce provider-safe JSON schemas", () => {
     const specs = toolSpecs(INVESTIGATION_TOOLS);
-    expect(specs.map((s) => s.name)).toEqual(["search_issues", "get_issue", "get_comments", "check_scope", "record_decision"]);
+    expect(specs.map((s) => s.name)).toEqual([
+      "search_issues",
+      "get_issue",
+      "get_comments",
+      "check_scope",
+      "record_decision",
+    ]);
     const json = JSON.stringify(specs);
     expect(json).not.toMatch(/\$schema|additionalProperties/);
   });

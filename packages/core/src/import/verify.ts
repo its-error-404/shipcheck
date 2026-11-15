@@ -7,15 +7,10 @@ import pLimit from "p-limit";
 import { adfToText } from "../jira/adf";
 import type { JiraReader } from "../jira/client";
 import { scopedJql } from "../jira/jql";
-import type { Dataset } from "./dataset";
-import {
-  LINK_TYPE,
-  descriptionFor,
-  labelsFor,
-  parseImportedComment,
-  sourceIdFromLabels,
-  summaryFor,
-} from "./mapping";
+import { JIRA_LINK_TYPE } from "../constants/jira";
+import type { Dataset } from "../models/dataset";
+import { sourceIdFromLabels } from "../utils/labels";
+import { descriptionFor, labelsFor, parseImportedComment, summaryFor } from "./mapping";
 
 export interface VerifyReport {
   ok: boolean;
@@ -34,13 +29,13 @@ export interface VerifyReport {
   mismatches: string[];
 }
 
-export async function verifyImport(
+export const verifyImport = async (
   jira: JiraReader,
   dataset: Dataset,
   projectKey: string,
   scopeLabel = dataset.dataset_label,
   concurrency = 4,
-): Promise<VerifyReport> {
+): Promise<VerifyReport> => {
   const mismatches: string[] = [];
   const issues = await jira.searchAll(scopedJql(projectKey, scopeLabel), [
     "summary",
@@ -100,7 +95,7 @@ export async function verifyImport(
   const found = new Set<string>();
   for (const issue of issues) {
     for (const link of issue.fields.issuelinks ?? []) {
-      if (link.type.name !== LINK_TYPE) continue;
+      if (link.type.name !== JIRA_LINK_TYPE) continue;
       const other = link.inwardIssue?.key ?? link.outwardIssue?.key;
       if (other) found.add([issue.key, other].sort().join("|"));
     }
@@ -136,4 +131,4 @@ export async function verifyImport(
     },
     mismatches,
   };
-}
+};

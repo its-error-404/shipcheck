@@ -12,16 +12,11 @@ import type { JiraIssue, JiraTransition, JiraWriter } from "../jira/client";
 import { JiraError } from "../jira/errors";
 import { scopedJql } from "../jira/jql";
 import { noopTrace, type TraceSink } from "../trace";
-import type { Dataset, SourceRecord } from "./dataset";
-import {
-  LINK_TYPE,
-  commentBodyFor,
-  descriptionFor,
-  labelsFor,
-  parseImportedComment,
-  sourceIdFromLabels,
-  summaryFor,
-} from "./mapping";
+import { DEFAULT_ISSUE_TYPE, JIRA_LIMITS, JIRA_LINK_TYPE, REQUIRED_CREATE_FIELDS } from "../constants/jira";
+import { TRACE_EVENTS } from "../constants/trace";
+import type { Dataset, SourceRecord } from "../models/dataset";
+import { sourceIdFromLabels } from "../utils/labels";
+import { commentBodyFor, descriptionFor, labelsFor, parseImportedComment, summaryFor } from "./mapping";
 
 export interface ImportOptions {
   projectKey: string;
@@ -76,16 +71,16 @@ export class Importer {
     const project = await this.jira.getProjectOrExplain(this.opts.projectKey);
     this.log(`✓ Project ${project.key} (${project.name})`);
 
-    const wanted = (this.opts.issueTypeName ?? "Task").toLowerCase();
+    const wanted = (this.opts.issueTypeName ?? DEFAULT_ISSUE_TYPE).toLowerCase();
     const types = await this.jira.getIssueTypes(this.opts.projectKey);
     const type = types.find((t) => t.name.toLowerCase() === wanted);
     if (!type) {
       throw new Error(
-        `Issue type "${this.opts.issueTypeName ?? "Task"}" not found in ${this.opts.projectKey}. Available: ${types.map((t) => t.name).join(", ")}`,
+        `Issue type "${this.opts.issueTypeName ?? DEFAULT_ISSUE_TYPE}" not found in ${this.opts.projectKey}. Available: ${types.map((t) => t.name).join(", ")}`,
       );
     }
     const fields = await this.jira.getCreateFields(this.opts.projectKey, type.id);
-    for (const f of ["summary", "description", "labels"]) {
+    for (const f of REQUIRED_CREATE_FIELDS) {
       if (!fields.includes(f)) {
         throw new Error(
           `Field "${f}" is not on the create screen for ${type.name} in ${this.opts.projectKey}. Add it in the project's field configuration and rerun.`,
@@ -95,10 +90,10 @@ export class Importer {
     this.log(`✓ Issue type ${type.name} with summary/description/labels`);
 
     const linkTypes = await this.jira.getLinkTypes();
-    if (!linkTypes.some((l) => l.name === LINK_TYPE)) {
-      throw new Error(`Link type "${LINK_TYPE}" not found. Available: ${linkTypes.map((l) => l.name).join(", ")}`);
+    if (!linkTypes.some((l) => l.name === JIRA_LINK_TYPE)) {
+      throw new Error(`Link type "${JIRA_LINK_TYPE}" not found. Available: ${linkTypes.map((l) => l.name).join(", ")}`);
     }
-    this.log(`✓ Link type ${LINK_TYPE}`);
+    this.log(`✓ Link type ${JIRA_LINK_TYPE}`);
     return { issueTypeId: type.id, user: me.displayName };
   }
 
@@ -150,15 +145,19 @@ export class Importer {
     if (this.opts.dryRun) {
       this.log(`[dry-run] would create ${missing.length} issues`);
     } else {
-      for (let i = 0; i < missing.length; i += 50) {
-        const batch = missing.slice(i, i + 50);
+      for (let i = 0; i < missing.length; i += JIRA_LIMITS.bulkCreate) {
+        const batch = missing.slice(i, i + JIRA_LIMITS.bulkCreate);
         const payload = batch.map((r) => ({
           fields: {
             project: { key: this.opts.projectKey },
             issuetype: { id: issueTypeId },
             summary: summaryFor(r),
             description: textToAdf(
-              descriptionFor(r, this.scope, r.links.filter((l) => !knownIds.has(l))),
+              descriptionFor(
+                r,
+                this.scope,
+                r.links.filter((l) => !knownIds.has(l)),
+              ),
             ),
             labels: labelsFor(r, this.scope),
           },
@@ -196,7 +195,7 @@ export class Importer {
     const existingPairs = new Set<string>();
     for (const issue of existing.values()) {
       for (const link of issue.fields.issuelinks ?? []) {
-        if (link.type.name !== LINK_TYPE) continue;
+        if (link.type.name !== JIRA_LINK_TYPE) continue;
         const other = link.inwardIssue?.key ?? link.outwardIssue?.key;
         if (other) existingPairs.add(pairKey(issue.key, other));
       }
@@ -205,7 +204,9 @@ export class Importer {
     for (const r of records) {
       for (const target of r.links) {
         if (!knownIds.has(target)) {
-          report.warnings.push(`${r.source_id} links to ${target}, which is not in the dataset (recorded in description)`);
+          report.warnings.push(
+            `${r.source_id} links to ${target}, which is not in the dataset (recorded in description)`,
+          );
           continue;
         }
         const a = existing.get(r.source_id)?.key;
@@ -222,7 +223,7 @@ export class Importer {
       }
       if (this.opts.dryRun) continue;
       try {
-        await this.jira.createLink(LINK_TYPE, from, to);
+        await this.jira.createLink(JIRA_LINK_TYPE, from, to);
         report.links.created++;
       } catch (e) {
         report.links.failed++;
@@ -267,7 +268,7 @@ export class Importer {
     );
 
     report.durationMs = Date.now() - started;
-    this.trace.emit({ type: "import_complete", durationMs: report.durationMs, errors: report.errors.length });
+    this.trace.emit({ type: TRACE_EVENTS.importComplete, durationMs: report.durationMs, errors: report.errors.length });
     return report;
   }
 
@@ -305,6 +306,6 @@ export class Importer {
   }
 }
 
-function pairKey(a: string, b: string): string {
+const pairKey = (a: string, b: string): string => {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
-}
+};

@@ -6,37 +6,75 @@ import { MemoryTrace } from "../src/trace";
 
 type Reply = { status: number; body: unknown; headers?: Record<string, string> };
 
-function fakeFetch(replies: Reply[]) {
+const fakeFetch = (replies: Reply[]) => {
   const calls: any[] = [];
   const f = (async (_url: any, init: any) => {
     calls.push(JSON.parse(init.body));
     const r = replies.shift() ?? replies[replies.length - 1]!;
-    return new Response(JSON.stringify(r.body), { status: r.status, headers: { "content-type": "application/json", ...(r.headers ?? {}) } });
+    return new Response(JSON.stringify(r.body), {
+      status: r.status,
+      headers: { "content-type": "application/json", ...(r.headers ?? {}) },
+    });
   }) as typeof fetch;
   return { f, calls };
-}
+};
 
 const okToolCall = {
   status: 200,
   body: {
-    id: "x", object: "chat.completion", created: 1, model: "gemini-test",
-    choices: [{ index: 0, finish_reason: "tool_calls", message: { role: "assistant", content: null,
-      tool_calls: [{ id: "c1", type: "function", function: { name: "get_issue", arguments: '{"ref":"REQ-04"}' }, extra_content: { google: { thought_signature: "sig" } } }] } }],
-    usage: { prompt_tokens: 1200, completion_tokens: 40, total_tokens: 1240, prompt_tokens_details: { cached_tokens: 800 } },
+    id: "x",
+    object: "chat.completion",
+    created: 1,
+    model: "gemini-test",
+    choices: [
+      {
+        index: 0,
+        finish_reason: "tool_calls",
+        message: {
+          role: "assistant",
+          content: null,
+          tool_calls: [
+            {
+              id: "c1",
+              type: "function",
+              function: { name: "get_issue", arguments: '{"ref":"REQ-04"}' },
+              extra_content: { google: { thought_signature: "sig" } },
+            },
+          ],
+        },
+      },
+    ],
+    usage: {
+      prompt_tokens: 1200,
+      completion_tokens: 40,
+      total_tokens: 1240,
+      prompt_tokens_details: { cached_tokens: 800 },
+    },
   },
 };
 
-function client(replies: Reply[], extra: Record<string, unknown> = {}) {
+const client = (replies: Reply[], extra: Record<string, unknown> = {}) => {
   const { f, calls } = fakeFetch(replies);
   const sleeps: number[] = [];
   const trace = new MemoryTrace();
   const c = new OpenAICompatibleClient({
-    baseURL: "https://llm.example/v1", apiKey: "k", model: "gemini-test", fetch: f, trace,
-    sleep: async (ms) => { sleeps.push(ms); }, ...extra,
+    baseURL: "https://llm.example/v1",
+    apiKey: "k",
+    model: "gemini-test",
+    fetch: f,
+    trace,
+    sleep: async (ms) => {
+      sleeps.push(ms);
+    },
+    ...extra,
   });
   return { c, calls, sleeps, trace };
-}
-const req = { system: "sys", messages: [{ role: "user" as const, content: "go" }], tools: [{ name: "get_issue", description: "d", parameters: { type: "object", properties: {} } }] };
+};
+const req = {
+  system: "sys",
+  messages: [{ role: "user" as const, content: "go" }],
+  tools: [{ name: "get_issue", description: "d", parameters: { type: "object", properties: {} } }],
+};
 
 describe("OpenAI-compatible adapter", () => {
   it("parses tool calls and usage (incl. cached tokens), temperature 0", async () => {
@@ -51,7 +89,14 @@ describe("OpenAI-compatible adapter", () => {
   it("echoes the provider's raw tool call back verbatim (e.g. Gemini thought signatures)", async () => {
     const { c, calls } = client([okToolCall, okToolCall]);
     const r = await c.chat(req);
-    await c.chat({ ...req, messages: [...req.messages, { role: "assistant", toolCalls: r.toolCalls }, { role: "tool", toolCallId: "c1", name: "get_issue", content: "ok" }] });
+    await c.chat({
+      ...req,
+      messages: [
+        ...req.messages,
+        { role: "assistant", toolCalls: r.toolCalls },
+        { role: "tool", toolCallId: "c1", name: "get_issue", content: "ok" },
+      ],
+    });
     const assistant = calls[1].messages[2];
     expect(assistant.tool_calls[0].extra_content.google.thought_signature).toBe("sig");
     expect(calls[1].messages[3]).toEqual({ role: "tool", tool_call_id: "c1", content: "ok" });
@@ -59,7 +104,15 @@ describe("OpenAI-compatible adapter", () => {
 
   it("waits the provider-suggested delay on a per-minute 429, then succeeds", async () => {
     const { c, sleeps, trace } = client([
-      { status: 429, body: { error: { message: "Quota exceeded for metric: requests per minute. Please retry in 37.2s.", details: [{ retryDelay: "37s" }] } } },
+      {
+        status: 429,
+        body: {
+          error: {
+            message: "Quota exceeded for metric: requests per minute. Please retry in 37.2s.",
+            details: [{ retryDelay: "37s" }],
+          },
+        },
+      },
       okToolCall,
     ]);
     const r = await c.chat(req);
@@ -70,7 +123,12 @@ describe("OpenAI-compatible adapter", () => {
   });
 
   it("stops immediately on a daily quota (no pointless retries)", async () => {
-    const { c, sleeps } = client([{ status: 429, body: { error: { message: "Quota exceeded for metric: GenerateRequestsPerDayPerProjectPerModel-FreeTier" } } }]);
+    const { c, sleeps } = client([
+      {
+        status: 429,
+        body: { error: { message: "Quota exceeded for metric: GenerateRequestsPerDayPerProjectPerModel-FreeTier" } },
+      },
+    ]);
     await expect(c.chat(req)).rejects.toBeInstanceOf(LlmQuotaExhaustedError);
     expect(sleeps).toEqual([]);
   });
@@ -79,8 +137,12 @@ describe("OpenAI-compatible adapter", () => {
     const a = client([{ status: 503, body: { error: { message: "overloaded" } } }, okToolCall]);
     await expect(a.c.chat(req)).resolves.toBeTruthy();
     expect(a.sleeps).toEqual([2000]);
-    await expect(client([{ status: 401, body: { error: { message: "bad key" } } }]).c.chat(req)).rejects.toBeInstanceOf(LlmAuthError);
-    await expect(client([{ status: 400, body: { error: { message: "model not found" } } }]).c.chat(req)).rejects.toBeInstanceOf(LlmBadRequestError);
+    await expect(client([{ status: 401, body: { error: { message: "bad key" } } }]).c.chat(req)).rejects.toBeInstanceOf(
+      LlmAuthError,
+    );
+    await expect(
+      client([{ status: 400, body: { error: { message: "model not found" } } }]).c.chat(req),
+    ).rejects.toBeInstanceOf(LlmBadRequestError);
   });
 
   it("marks invalid JSON arguments instead of throwing", async () => {
@@ -95,7 +157,14 @@ describe("RateLimiter", () => {
   it("never exceeds the configured requests per minute", async () => {
     let now = 0;
     const waits: number[] = [];
-    const rl = new RateLimiter(3, () => now, async (ms) => { waits.push(ms); now += ms; });
+    const rl = new RateLimiter(
+      3,
+      () => now,
+      async (ms) => {
+        waits.push(ms);
+        now += ms;
+      },
+    );
     for (let i = 0; i < 7; i++) await rl.acquire();
     expect(waits.length).toBe(2); // requests 4 and 7 had to wait for the window
     expect(now).toBeGreaterThanOrEqual(120_000);

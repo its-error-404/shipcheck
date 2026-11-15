@@ -4,7 +4,7 @@
  * instead of accepting a bad result.
  */
 import { z } from "zod";
-import { DECISIONS, type DecisionInput } from "../ledger";
+import { DECISIONS, STANCES, type DecisionInput } from "../models/decision";
 import { defineTool, toolError } from "./types";
 
 export interface Plan {
@@ -46,8 +46,11 @@ export const submitPlan = defineTool({
     }
     const missing = manifest.links.filter((l) => l.direction === "outgoing" && !seen.has(l.key));
     if (missing.length)
-      problems.push(`The manifest declares links you did not include: ${missing.map((m) => `${m.key} (${m.sourceId})`).join(", ")}. Include them or check they are requirements.`);
-    if (problems.length) return toolError(`Plan rejected:\n- ${problems.join("\n- ")}`, "Fix the plan and call submit_plan again.");
+      problems.push(
+        `The manifest declares links you did not include: ${missing.map((m) => `${m.key} (${m.sourceId})`).join(", ")}. Include them or check they are requirements.`,
+      );
+    if (problems.length)
+      return toolError(`Plan rejected:\n- ${problems.join("\n- ")}`, "Fix the plan and call submit_plan again.");
     const plan: Plan = { manifestKey: mKey, manifestSourceId: manifest.sourceId, requirements: reqs };
     return { content: `Plan accepted: ${reqs.length} requirement(s) from manifest ${mKey}.`, terminal: plan };
   },
@@ -63,13 +66,15 @@ export const recordDecision = defineTool({
   schema: z.object({
     requirement_key: z.string().describe("Jira key of the assigned requirement"),
     decision: z.enum(DECISIONS),
-    explanation: z.string().describe("Why this decision follows from the applicable evidence and the rules (3-8 sentences)"),
+    explanation: z
+      .string()
+      .describe("Why this decision follows from the applicable evidence and the rules (3-8 sentences)"),
     evidence: z
       .array(
         z.object({
           issue_key: z.string(),
           comment_id: z.string().optional(),
-          stance: z.enum(["supports_pass", "supports_fail", "inconclusive", "not_applicable"]),
+          stance: z.enum(STANCES),
           why: z.string().describe("One sentence: what this evidence shows, or why it does not apply"),
         }),
       )
@@ -90,7 +95,10 @@ export const recordDecision = defineTool({
     };
     const problems = ctx.ledger.validate(input, ctx.requirementKey);
     if (problems.length)
-      return toolError(`Decision rejected:\n- ${problems.join("\n- ")}`, "Fetch what you need, fix the citations, and call record_decision again.");
+      return toolError(
+        `Decision rejected:\n- ${problems.join("\n- ")}`,
+        "Fetch what you need, fix the citations, and call record_decision again.",
+      );
     return { content: `Decision recorded: ${input.decision} for ${reqKey}.`, terminal: input };
   },
 });

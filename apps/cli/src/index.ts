@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { Command } from "commander";
 import {
   Importer,
+  TRACE_EVENTS,
   JiraReader,
   JiraWriter,
   createJiraHttp,
@@ -21,31 +22,30 @@ import {
   type TraceSink,
 } from "@tyn/core";
 
-const program = new Command()
-  .name("tyn")
-  .description("Jira release-evidence agent: importer and assessment CLI");
+const program = new Command().name("tyn").description("Jira release-evidence agent: importer and assessment CLI");
 
-function jiraHttp(trace?: TraceSink) {
+const jiraHttp = (trace?: TraceSink) => {
   const cfg = loadJiraConfig();
   return {
     cfg,
     http: createJiraHttp({ baseUrl: cfg.JIRA_BASE_URL, email: cfg.JIRA_EMAIL, apiToken: cfg.JIRA_API_TOKEN, trace }),
   };
-}
+};
 
 /** Prints retries as they happen so a slow import never looks frozen. */
 const retryLogger: TraceSink = {
   emit(e) {
-    if (e.type === "jira_retry") console.warn(`  ↻ ${e.method} ${e.path} → ${e.status}; retry ${e.attempt} in ${e.delayMs} ms`);
+    if (e.type === TRACE_EVENTS.jiraRetry)
+      console.warn(`  ↻ ${e.method} ${e.path} → ${e.status}; retry ${e.attempt} in ${e.delayMs} ms`);
   },
 };
 
-async function writeJson(dir: string, name: string, data: unknown) {
+const writeJson = async (dir: string, name: string, data: unknown) => {
   await mkdir(dir, { recursive: true });
   const path = join(dir, name);
   await writeFile(path, JSON.stringify(data, null, 2) + "\n");
   return path;
-}
+};
 
 program
   .command("verify-jira")
@@ -73,7 +73,9 @@ program
     const { cfg, http } = jiraHttp(retryLogger);
     const dataset = await loadDataset(o.dataset);
     const projectKey = o.project ?? cfg.JIRA_PROJECT_KEY;
-    console.log(`Importing ${dataset.records.length} records into ${projectKey} (scope label: ${o.label ?? dataset.dataset_label})${o.dryRun ? " [dry-run]" : ""}`);
+    console.log(
+      `Importing ${dataset.records.length} records into ${projectKey} (scope label: ${o.label ?? dataset.dataset_label})${o.dryRun ? " [dry-run]" : ""}`,
+    );
     const report = await new Importer(new JiraWriter(http), dataset, {
       projectKey,
       scopeLabel: o.label,
@@ -85,9 +87,15 @@ program
     const { map, ...summary } = report;
     if (!o.dryRun) await writeJson(o.out, "import-map.json", map);
     const path = await writeJson(o.out, o.dryRun ? "import-plan.json" : "import-report.json", summary);
-    console.log(`\nIssues: ${report.issues.created} created, ${report.issues.existing} existing, ${report.issues.failed} failed`);
-    console.log(`Comments: ${report.comments.created} created, ${report.comments.existing} existing (expected ${report.comments.expected})`);
-    console.log(`Links: ${report.links.created} created, ${report.links.existing} existing (expected ${report.links.expected})`);
+    console.log(
+      `\nIssues: ${report.issues.created} created, ${report.issues.existing} existing, ${report.issues.failed} failed`,
+    );
+    console.log(
+      `Comments: ${report.comments.created} created, ${report.comments.existing} existing (expected ${report.comments.expected})`,
+    );
+    console.log(
+      `Links: ${report.links.created} created, ${report.links.existing} existing (expected ${report.links.expected})`,
+    );
     console.log(`Duration: ${(report.durationMs / 1000).toFixed(1)} s · report: ${path}`);
     for (const w of report.warnings) console.warn(`⚠ ${w}`);
     if (report.errors.length) {
@@ -107,10 +115,18 @@ program
   .action(async (o) => {
     const { cfg, http } = jiraHttp(retryLogger);
     const dataset = await loadDataset(o.dataset);
-    const report = await verifyImport(new JiraReader(http), dataset, o.project ?? cfg.JIRA_PROJECT_KEY, o.label ?? dataset.dataset_label, cfg.JIRA_CONCURRENCY);
+    const report = await verifyImport(
+      new JiraReader(http),
+      dataset,
+      o.project ?? cfg.JIRA_PROJECT_KEY,
+      o.label ?? dataset.dataset_label,
+      cfg.JIRA_CONCURRENCY,
+    );
     const path = await writeJson(o.out, "verify-report.json", report);
     const c = report.counts;
-    console.log(`Issues ${c.foundIssues}/${c.expectedIssues} · comments ${c.matchingComments}/${c.expectedComments} · links ${c.foundLinks}/${c.expectedLinks} · statuses ${c.statusMatches}/${c.expectedIssues}`);
+    console.log(
+      `Issues ${c.foundIssues}/${c.expectedIssues} · comments ${c.matchingComments}/${c.expectedComments} · links ${c.foundLinks}/${c.expectedLinks} · statuses ${c.statusMatches}/${c.expectedIssues}`,
+    );
     if (report.ok) console.log(`✓ Jira matches the dataset · ${path}`);
     else {
       for (const m of report.mismatches.slice(0, 50)) console.error(`✗ ${m}`);

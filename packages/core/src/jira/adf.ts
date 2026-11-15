@@ -19,7 +19,7 @@ export interface AdfDoc {
   content: AdfNode[];
 }
 
-export function textToAdf(text: string): AdfDoc {
+export const textToAdf = (text: string): AdfDoc => {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   return {
     type: "doc",
@@ -30,18 +30,18 @@ export function textToAdf(text: string): AdfDoc {
       content: line.length > 0 ? [{ type: "text", text: line }] : [],
     })),
   };
-}
+};
 
-function inlineText(node: AdfNode): string {
+const inlineText = (node: AdfNode): string => {
   if (node.type === "text") return node.text ?? "";
   if (node.type === "hardBreak") return "\n";
   if (node.type === "mention") return String(node.attrs?.text ?? "");
   if (node.type === "inlineCard") return String(node.attrs?.url ?? "");
   return (node.content ?? []).map(inlineText).join("");
-}
+};
 
 /** Converts ADF (or a plain string, for safety) to plain text, one block per line. */
-export function adfToText(doc: unknown): string {
+export const adfToText = (doc: unknown): string => {
   if (doc == null) return "";
   if (typeof doc === "string") return doc;
   const root = doc as AdfNode;
@@ -58,4 +58,4 @@ export function adfToText(doc: unknown): string {
     }
   }
   return lines.join("\n");
-}
+};

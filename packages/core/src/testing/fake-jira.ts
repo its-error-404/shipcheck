@@ -95,10 +95,28 @@ export class FakeJira {
     return this.respond(config, status, data);
   };
 
-  private respond(config: InternalAxiosRequestConfig, status: number, data: unknown, headers: Record<string, string> = {}) {
-    const response = { data, status, statusText: String(status), headers: new AxiosHeaders(headers), config, request: {} };
+  private respond(
+    config: InternalAxiosRequestConfig,
+    status: number,
+    data: unknown,
+    headers: Record<string, string> = {},
+  ) {
+    const response = {
+      data,
+      status,
+      statusText: String(status),
+      headers: new AxiosHeaders(headers),
+      config,
+      request: {},
+    };
     if (status >= 200 && status < 300) return response;
-    throw new AxiosError(`Request failed with status code ${status}`, AxiosError.ERR_BAD_RESPONSE, config, {}, response);
+    throw new AxiosError(
+      `Request failed with status code ${status}`,
+      AxiosError.ERR_BAD_RESPONSE,
+      config,
+      {},
+      response,
+    );
   }
 
   route(method: string, path: string, q: URLSearchParams, body: any): { status: number; data: unknown } {
@@ -106,13 +124,21 @@ export class FakeJira {
     const p = path.replace(/^\/rest\/api\/3/, "");
 
     if (method === "GET" && p === "/myself") return ok({ accountId: "fake-1", displayName: "Fake Importer" });
-    if (method === "GET" && p === "/project/search") return ok({ values: [{ key: this.projectKey, name: "Fake project" }] });
+    if (method === "GET" && p === "/project/search")
+      return ok({ values: [{ key: this.projectKey, name: "Fake project" }] });
     if (method === "GET" && (m = /^\/project\/([^/]+)$/.exec(p)))
       return m[1] === this.projectKey ? ok({ id: "1", key: this.projectKey, name: "Fake project" }) : notFound();
-    if (method === "GET" && (m = /^\/issue\/createmeta\/([^/]+)\/issuetypes$/.exec(p)))
-      return ok({ issueTypes: [{ id: "10001", name: "Task" }, { id: "10002", name: "Bug" }] });
+    if (method === "GET" && /^\/issue\/createmeta\/[^/]+\/issuetypes$/.test(p))
+      return ok({
+        issueTypes: [
+          { id: "10001", name: "Task" },
+          { id: "10002", name: "Bug" },
+        ],
+      });
     if (method === "GET" && /^\/issue\/createmeta\/[^/]+\/issuetypes\/[^/]+$/.test(p))
-      return ok({ fields: ["summary", "description", "labels", "issuetype", "project"].map((fieldId) => ({ fieldId })) });
+      return ok({
+        fields: ["summary", "description", "labels", "issuetype", "project"].map((fieldId) => ({ fieldId })),
+      });
     if (method === "GET" && p === "/issueLinkType") return ok({ issueLinkTypes: LINK_TYPES });
 
     if (method === "POST" && p === "/issue/bulk") return this.bulkCreate(body);
@@ -125,10 +151,19 @@ export class FakeJira {
       if (method === "GET") {
         const startAt = Number(q.get("startAt") ?? 0);
         const max = Number(q.get("maxResults") ?? 50);
-        return ok({ comments: issue.comments.slice(startAt, startAt + max), total: issue.comments.length, startAt, maxResults: max });
+        return ok({
+          comments: issue.comments.slice(startAt, startAt + max),
+          total: issue.comments.length,
+          startAt,
+          maxResults: max,
+        });
       }
       if (method === "POST") {
-        const c = { id: String(++this.commentSeq), body: body.body, created: new Date((this.clock += 1000)).toISOString() };
+        const c = {
+          id: String(++this.commentSeq),
+          body: body.body,
+          created: new Date((this.clock += 1000)).toISOString(),
+        };
         issue.comments.push(c);
         return { status: 201, data: c };
       }
@@ -138,7 +173,11 @@ export class FakeJira {
       if (!issue) return notFound();
       if (method === "GET")
         return ok({
-          transitions: STATUSES.filter((s) => s !== issue.status).map((s) => ({ id: String(11 + STATUSES.indexOf(s) * 10), name: s, to: { name: s } })),
+          transitions: STATUSES.filter((s) => s !== issue.status).map((s) => ({
+            id: String(11 + STATUSES.indexOf(s) * 10),
+            name: s,
+            to: { name: s },
+          })),
         });
       if (method === "POST") {
         const target = STATUSES[(Number(body.transition.id) - 11) / 10];
@@ -162,7 +201,10 @@ export class FakeJira {
       const f = u.fields;
       const badLabel = (f.labels ?? []).find((l: string) => /\s/.test(l));
       if (!f.summary || badLabel) {
-        errors.push({ failedElementNumber: i, elementErrors: { errors: badLabel ? { labels: "no spaces" } : { summary: "required" } } });
+        errors.push({
+          failedElementNumber: i,
+          elementErrors: { errors: badLabel ? { labels: "no spaces" } : { summary: "required" } },
+        });
         return;
       }
       const issue = this.seedIssue(f.summary, f.labels ?? []);
@@ -233,17 +275,17 @@ const bad = (msg: string) => ({ status: 400, data: { errorMessages: [msg] } });
 // ── Minimal JQL ─────────────────────────────────────────────────────────────
 type Pred = (issue: FakeIssue, jira: FakeJira) => boolean;
 
-function tokenize(jql: string): string[] {
+const tokenize = (jql: string): string[] => {
   const tokens: string[] = [];
   const re = /\s*("(?:[^"\\]|\\.)*"|\(|\)|,|!=|!~|=|~|[^\s(),=!~"]+)/gy;
   let m: RegExpExecArray | null;
   while ((m = re.exec(jql)) && m[1] !== undefined) tokens.push(m[1]);
   return tokens;
-}
+};
 
 const unquote = (t: string) => (t.startsWith('"') ? t.slice(1, -1).replace(/\\(.)/g, "$1") : t);
 
-export function parseJql(jql: string): Pred {
+export const parseJql = (jql: string): Pred => {
   const t = tokenize(jql.replace(/\border by\b.*$/i, ""));
   let i = 0;
   const peek = () => t[i]?.toUpperCase();
@@ -251,7 +293,8 @@ export function parseJql(jql: string): Pred {
     let left = term();
     while (peek() === "OR") {
       i++;
-      const l = left, r = term();
+      const l = left,
+        r = term();
       left = (x, j) => l(x, j) || r(x, j);
     }
     return left;
@@ -260,7 +303,8 @@ export function parseJql(jql: string): Pred {
     let left = factor();
     while (peek() === "AND") {
       i++;
-      const l = left, r = factor();
+      const l = left,
+        r = factor();
       left = (x, j) => l(x, j) && r(x, j);
     }
     return left;
@@ -282,7 +326,10 @@ export function parseJql(jql: string): Pred {
   const clause = (): Pred => {
     const field = (t[i++] ?? "").toLowerCase();
     let op = (t[i++] ?? "").toLowerCase();
-    if (op === "not" && peek() === "IN") { i++; op = "not in"; }
+    if (op === "not" && peek() === "IN") {
+      i++;
+      op = "not in";
+    }
     let values: string[];
     if (op === "in" || op === "not in") {
       values = [];
@@ -297,29 +344,44 @@ export function parseJql(jql: string): Pred {
     }
     const get = (x: FakeIssue, j: FakeJira): string[] => {
       switch (field) {
-        case "project": return [x.key.split("-")[0]!];
-        case "labels": return x.labels;
-        case "key": case "issuekey": return [x.key];
-        case "summary": return [x.summary];
-        case "status": return [x.status];
-        case "text": return [j.searchableText(x)];
-        default: throw new Error(`FakeJira: unsupported JQL field ${field}`);
+        case "project":
+          return [x.key.split("-")[0]!];
+        case "labels":
+          return x.labels;
+        case "key":
+        case "issuekey":
+          return [x.key];
+        case "summary":
+          return [x.summary];
+        case "status":
+          return [x.status];
+        case "text":
+          return [j.searchableText(x)];
+        default:
+          throw new Error(`FakeJira: unsupported JQL field ${field}`);
       }
     };
     const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
     return (x, j) => {
       const have = get(x, j);
       switch (op) {
-        case "=": return have.some((h) => eq(h, values[0]!));
-        case "!=": return !have.some((h) => eq(h, values[0]!));
-        case "in": return have.some((h) => values.some((v) => eq(h, v)));
-        case "not in": return !have.some((h) => values.some((v) => eq(h, v)));
-        case "~": return have.some((h) => h.toLowerCase().includes(values[0]!.toLowerCase().replace(/\*/g, "")));
-        case "!~": return !have.some((h) => h.toLowerCase().includes(values[0]!.toLowerCase()));
-        default: throw new Error(`FakeJira: unsupported JQL operator ${op}`);
+        case "=":
+          return have.some((h) => eq(h, values[0]!));
+        case "!=":
+          return !have.some((h) => eq(h, values[0]!));
+        case "in":
+          return have.some((h) => values.some((v) => eq(h, v)));
+        case "not in":
+          return !have.some((h) => values.some((v) => eq(h, v)));
+        case "~":
+          return have.some((h) => h.toLowerCase().includes(values[0]!.toLowerCase().replace(/\*/g, "")));
+        case "!~":
+          return !have.some((h) => h.toLowerCase().includes(values[0]!.toLowerCase()));
+        default:
+          throw new Error(`FakeJira: unsupported JQL operator ${op}`);
       }
     };
   };
   const pred = expr();
   return pred;
-}
+};

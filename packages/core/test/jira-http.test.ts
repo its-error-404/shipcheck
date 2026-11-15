@@ -7,7 +7,12 @@ import { fakeClient } from "./helpers";
 describe("Jira HTTP retry policy", () => {
   it("waits for Retry-After on 429, then succeeds", async () => {
     const { fake, jira, sleeps, trace } = fakeClient();
-    fake.fail({ match: (m, p) => m === "GET" && p.endsWith("/myself"), status: 429, times: 2, headers: { "retry-after": "3" } });
+    fake.fail({
+      match: (m, p) => m === "GET" && p.endsWith("/myself"),
+      status: 429,
+      times: 2,
+      headers: { "retry-after": "3" },
+    });
     const me = await jira.myself();
     expect(me.displayName).toBe("Fake Importer");
     expect(sleeps).toEqual([3000, 3000]);

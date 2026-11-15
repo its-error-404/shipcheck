@@ -3,6 +3,9 @@
  * Keeps us under a free-tier RPM quota proactively instead of hammering into
  * 429s. Shared by all concurrent investigations through one LlmClient.
  */
+import { LLM_DEFAULTS } from "../constants/llm";
+import { sleep as defaultSleep, type Sleep } from "../utils/async";
+
 export class RateLimiter {
   private readonly stamps: number[] = [];
   private chain: Promise<void> = Promise.resolve();
@@ -10,7 +13,7 @@ export class RateLimiter {
   constructor(
     private readonly rpm: number,
     private readonly now: () => number = Date.now,
-    private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+    private readonly sleep: Sleep = defaultSleep,
   ) {}
 
   /** Resolves when a request may be sent; returns how long the caller waited. */
@@ -28,12 +31,12 @@ export class RateLimiter {
     let waited = 0;
     for (;;) {
       const t = this.now();
-      while (this.stamps.length && t - this.stamps[0]! >= 60_000) this.stamps.shift();
+      while (this.stamps.length && t - this.stamps[0]! >= LLM_DEFAULTS.rateWindowMs) this.stamps.shift();
       if (this.stamps.length < this.rpm) {
         this.stamps.push(t);
         return waited;
       }
-      const wait = 60_000 - (t - this.stamps[0]!) + 50;
+      const wait = LLM_DEFAULTS.rateWindowMs - (t - this.stamps[0]!) + 50;
       waited += wait;
       await this.sleep(wait);
     }

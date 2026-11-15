@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { loadDataset, type Dataset } from "../src/import/dataset";
+import { loadDataset } from "../src/import/dataset";
+import type { Dataset } from "../src/models/dataset";
 import { Importer } from "../src/import/importer";
 import { verifyImport } from "../src/import/verify";
 import { DATASET_PATH, fakeClient } from "./helpers";
 
-async function freshImport(dataset?: Dataset) {
+const freshImport = async (dataset?: Dataset) => {
   const ds = dataset ?? (await loadDataset(DATASET_PATH));
   const ctx = fakeClient();
   const report = await new Importer(ctx.jira, ds, { projectKey: "TYN", concurrency: 8 }).run();
   return { ds, ...ctx, report };
-}
+};
 
 describe("Importer (full dataset against fake Jira)", () => {
   it("imports every record, comment, link and status, and verify-import passes", async () => {

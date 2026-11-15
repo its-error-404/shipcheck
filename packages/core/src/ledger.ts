@@ -6,45 +6,8 @@
  * only cite evidence it actually fetched from Jira, and the report quotes the
  * ledger's copy of the text rather than the model's paraphrase.
  */
-export interface LedgerIssue {
-  key: string;
-  sourceId?: string;
-  summary?: string;
-  kind?: string;
-}
-
-export interface LedgerComment {
-  id: string;
-  issueKey: string;
-  sourceId?: string;
-  position?: number;
-  total?: number;
-  recordedAt?: string;
-  actor?: string;
-  role?: string;
-  body: string;
-  /** True if it was only shown inside a collapsed run of near-duplicates. */
-  collapsed: boolean;
-}
-
-export const DECISIONS = ["PASS", "FAIL", "INSUFFICIENT_EVIDENCE"] as const;
-export type Decision = (typeof DECISIONS)[number];
-
-export interface EvidenceCitation {
-  issue_key: string;
-  comment_id?: string;
-  stance: "supports_pass" | "supports_fail" | "inconclusive" | "not_applicable";
-  why: string;
-}
-
-export interface DecisionInput {
-  requirement_key: string;
-  decision: Decision;
-  explanation: string;
-  evidence: EvidenceCitation[];
-  outstanding: string[];
-  anomalies: string[];
-}
+import { DECISIONS, type DecisionInput } from "./models/decision";
+import type { LedgerComment, LedgerIssue } from "./models/evidence";
 
 export class EvidenceLedger {
   readonly issues = new Map<string, LedgerIssue>();
@@ -66,7 +29,8 @@ export class EvidenceLedger {
     if (input.requirement_key !== assignedKey)
       problems.push(`requirement_key must be ${assignedKey} (you are investigating ${assignedKey}).`);
     if (!DECISIONS.includes(input.decision)) problems.push(`decision must be one of ${DECISIONS.join(", ")}.`);
-    if (input.explanation.trim().length < 20) problems.push("explanation is required (explain the decision in a few sentences).");
+    if (input.explanation.trim().length < 20)
+      problems.push("explanation is required (explain the decision in a few sentences).");
 
     for (const [i, ev] of input.evidence.entries()) {
       const where = `evidence[${i}]`;
@@ -74,14 +38,19 @@ export class EvidenceLedger {
         problems.push(`${where}: issue ${ev.issue_key} was never fetched in this investigation. Call get_issue first.`);
       if (ev.comment_id) {
         const c = this.comments.get(ev.comment_id);
-        if (!c) problems.push(`${where}: comment ${ev.comment_id} was never returned by get_comments/check_scope in this investigation.`);
+        if (!c)
+          problems.push(
+            `${where}: comment ${ev.comment_id} was never returned by get_comments/check_scope in this investigation.`,
+          );
         else if (c.issueKey !== ev.issue_key)
           problems.push(`${where}: comment ${ev.comment_id} belongs to ${c.issueKey}, not ${ev.issue_key}.`);
       }
     }
     const commentCites = input.evidence.filter((e) => e.comment_id);
     if (input.decision === "PASS" && !commentCites.some((e) => e.stance === "supports_pass"))
-      problems.push("PASS requires at least one cited comment with stance supports_pass (status or descriptions alone are not evidence).");
+      problems.push(
+        "PASS requires at least one cited comment with stance supports_pass (status or descriptions alone are not evidence).",
+      );
     if (input.decision === "FAIL" && !commentCites.some((e) => e.stance === "supports_fail"))
       problems.push("FAIL requires at least one cited comment with stance supports_fail.");
     if (input.decision === "INSUFFICIENT_EVIDENCE" && input.outstanding.length === 0)

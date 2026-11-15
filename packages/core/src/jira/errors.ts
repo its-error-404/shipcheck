@@ -29,7 +29,7 @@ export class JiraRateLimitError extends JiraError {}
 export class JiraUnavailableError extends JiraError {}
 
 /** Extracts Jira's human-readable error text from a response body. */
-export function jiraErrorText(data: unknown): string {
+export const jiraErrorText = (data: unknown): string => {
   if (!data || typeof data !== "object") return "";
   const d = data as { errorMessages?: unknown; errors?: unknown; message?: unknown };
   const parts: string[] = [];
@@ -41,4 +41,4 @@ export function jiraErrorText(data: unknown): string {
   }
   if (typeof d.message === "string") parts.push(d.message);
   return parts.join("; ");
-}
+};

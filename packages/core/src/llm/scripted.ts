@@ -16,7 +16,10 @@ export class ScriptedLlm implements LlmClient {
   readonly requests: ChatRequest[] = [];
   private i = 0;
 
-  constructor(private readonly steps: ScriptStep[], private readonly repeatLast = false) {}
+  constructor(
+    private readonly steps: ScriptStep[],
+    private readonly repeatLast = false,
+  ) {}
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
     this.requests.push(structuredClone(req));
