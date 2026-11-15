@@ -4,3 +4,8 @@ out/
 *.log
 .DS_Store
 .env.bak
+# Private notes and the local answer key (never published)
+private/
+eval/expected-*.json
+# Assessment runs: only the submitted run is committed (force-added)
+runs/
