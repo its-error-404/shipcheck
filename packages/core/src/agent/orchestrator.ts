@@ -161,6 +161,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
   if (!result.scopeIssueCount)
     return abort(`No issues found in project ${o.projectKey} with label "${o.scopeLabel}". Run the importer first.`);
   log(`  ${result.scopeIssueCount} issues in scope`);
+  o.trace.emit({ type: TRACE_EVENTS.runPhase, phase: "scope", issues: result.scopeIssueCount });
 
   // ── Phase 1: discovery ─────────────────────────────────────────────────
   phase("discovery");
@@ -182,6 +183,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
     );
   const plan = discovery.terminal;
   log(`  manifest ${plan.manifestKey} · ${plan.requirements.length} requirements`);
+  o.trace.emit({ type: TRACE_EVENTS.runPhase, phase: "plan", manifestKey: plan.manifestKey, manifestSourceId: plan.manifestSourceId, requirements: plan.requirements.length });
 
   // ── Phase 2: target + rules from the manifest (code, not the model) ────
   phase("manifest");
@@ -192,6 +194,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
     return abort(`Manifest ${plan.manifestKey} targets ${target.release}, not the requested ${o.release}.`);
   result.manifest = { key: manifest.key, sourceId: manifest.sourceId, summary: manifest.summary };
   result.target = target;
+  o.trace.emit({ type: TRACE_EVENTS.runPhase, phase: "target", target });
   const system = investigatorSystemPrompt({
     target,
     manifestKey: manifest.key,
@@ -203,6 +206,23 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
   phase("investigation", { requirements: plan.requirements.length, concurrency: o.concurrency ?? 1 });
   let quotaExhausted = false;
   const limit = pLimit(o.concurrency ?? 1);
+
+  const publish = async (outcome: RequirementResult, transcript?: AgentRunResult<unknown>["transcript"]) => {
+    o.trace.emit({
+      type: TRACE_EVENTS.requirementResult,
+      key: outcome.key,
+      sourceId: outcome.sourceId,
+      summary: outcome.summary,
+      decision: outcome.decision,
+      status: outcome.status,
+      stopReason: outcome.agent?.stopReason,
+      turns: outcome.agent?.turns,
+      toolCalls: outcome.agent?.toolCalls,
+      durationMs: outcome.agent?.durationMs,
+    });
+    await o.onRequirement?.(outcome, transcript);
+    return outcome;
+  };
 
   const investigate = async (req: Plan["requirements"][number]): Promise<RequirementResult> => {
     const issue = await view.getIssue(req.key);
@@ -219,10 +239,10 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
     const prior = o.resume?.get(req.key);
     if (prior && (prior.status === "decided" || prior.status === "resumed")) {
       log(`  ↺ ${req.sourceId ?? req.key}: reused ${prior.decision} from previous run`);
-      return { ...prior, status: "resumed" };
+      return publish({ ...prior, status: "resumed" });
     }
     if (quotaExhausted) {
-      return {
+      return publish({
         ...base,
         status: "not_assessed",
         decision: "INSUFFICIENT_EVIDENCE",
@@ -231,7 +251,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
         evidence: [],
         outstanding: ["Run the investigation for this requirement (resume the run after the quota resets)."],
         anomalies: [],
-      };
+      });
     }
 
     const ledger = new EvidenceLedger();
@@ -276,15 +296,7 @@ export const assess = async (o: AssessOptions): Promise<AssessmentResult> => {
     log(
       `  ${outcome.status === "decided" ? "✓" : "✗"} ${outcome.sourceId ?? outcome.key}: ${outcome.decision}${outcome.status === "decided" ? "" : ` (${run.stopReason})`}`,
     );
-    o.trace.emit({
-      type: TRACE_EVENTS.requirementResult,
-      key: outcome.key,
-      sourceId: outcome.sourceId,
-      decision: outcome.decision,
-      status: outcome.status,
-    });
-    await o.onRequirement?.(outcome, run.transcript);
-    return outcome;
+    return publish(outcome, run.transcript);
   };
 
   const settled = await Promise.allSettled(plan.requirements.map((req) => limit(() => investigate(req))));
