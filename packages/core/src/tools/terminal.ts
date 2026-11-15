@@ -89,7 +89,13 @@ export const recordDecision = defineTool({
       requirement_key: reqKey,
       decision: a.decision,
       explanation: a.explanation,
-      evidence: a.evidence.map((e) => ({ ...e, issue_key: e.issue_key.toUpperCase() })),
+      // Models often cite source IDs (REQ-02, REC-1001); normalise to the Jira keys the ledger records.
+      evidence: await Promise.all(
+        a.evidence.map(async (e) => ({
+          ...e,
+          issue_key: (await ctx.view.resolve(e.issue_key)) ?? e.issue_key.toUpperCase(),
+        })),
+      ),
       outstanding: a.outstanding ?? [],
       anomalies: a.anomalies ?? [],
     };

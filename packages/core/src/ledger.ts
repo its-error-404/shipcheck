@@ -23,6 +23,20 @@ export class EvidenceLedger {
     this.comments.set(comment.id, { ...comment, collapsed: comment.collapsed && (prev?.collapsed ?? true) });
   }
 
+  /** Comment ids already shown for an issue, formatted as a hint the model can act on. */
+  private commentHint(issueKey: string): string {
+    const seen = [...this.comments.values()].filter((c) => c.issueKey === issueKey && !c.collapsed);
+    if (!seen.length) return `You have not read any comments on ${issueKey} yet: call get_comments on it.`;
+    const list = seen
+      .slice(0, 12)
+      .map(
+        (c) =>
+          `${c.id} (#${c.position ?? "?"}, ${c.actor ?? "?"} / ${c.role ?? "?"}: "${c.body.slice(0, 60).replace(/\s+/g, " ")}…")`,
+      )
+      .join("; ");
+    return `Comment ids you have read on ${issueKey}: ${list}.`;
+  }
+
   /** Returns a list of problems; empty means the decision is acceptable. */
   validate(input: DecisionInput, assignedKey: string): string[] {
     const problems: string[] = [];
@@ -49,12 +63,24 @@ export class EvidenceLedger {
     const commentCites = input.evidence.filter((e) => e.comment_id);
     if (input.decision === "PASS" && !commentCites.some((e) => e.stance === "supports_pass"))
       problems.push(
-        "PASS requires at least one cited comment with stance supports_pass (status or descriptions alone are not evidence).",
+        `PASS requires comment_id on at least one evidence item with stance supports_pass (status or descriptions alone are not evidence). ${this.hintsFor(input, "supports_pass")}`,
       );
     if (input.decision === "FAIL" && !commentCites.some((e) => e.stance === "supports_fail"))
-      problems.push("FAIL requires at least one cited comment with stance supports_fail.");
+      problems.push(
+        `FAIL requires comment_id on at least one evidence item with stance supports_fail. ${this.hintsFor(input, "supports_fail")}`,
+      );
     if (input.decision === "INSUFFICIENT_EVIDENCE" && input.outstanding.length === 0)
       problems.push("INSUFFICIENT_EVIDENCE requires 'outstanding': what verification or clarification is missing.");
     return problems;
+  }
+
+  /** Hints listing readable comment ids on the issues the model cited with the given stance. */
+  private hintsFor(input: DecisionInput, stance: string): string {
+    const keys = [...new Set(input.evidence.filter((e) => e.stance === stance).map((e) => e.issue_key))].filter((k) =>
+      this.issues.has(k),
+    );
+    return keys.length
+      ? keys.map((k) => this.commentHint(k)).join(" ")
+      : "Cite the issue and the comment_id that shows the result.";
   }
 }

@@ -163,7 +163,7 @@ describe("record_decision + ledger", () => {
       explanation: "Requirement is marked Done in Jira so it passes.",
       evidence: [{ issue_key: keyOf("REQ-11"), stance: "supports_pass", why: "status Done" }],
     });
-    expect(pass.content).toMatch(/PASS requires at least one cited comment/);
+    expect(pass.content).toMatch(/PASS requires comment_id/);
     const ins = await run(c, "record_decision", {
       requirement_key: "REQ-11",
       decision: "INSUFFICIENT_EVIDENCE",
@@ -246,5 +246,34 @@ describe("tool specs", () => {
     const r = await run(ctx(), "get_comments", { ref: "REC-9745", limit: 500 });
     expect(r.isError).toBe(true);
     expect(r.content).toMatch(/Invalid arguments/);
+  });
+});
+
+describe("record_decision usability for small models", () => {
+  it("accepts source IDs (REQ-07 / REC-9745) in citations", async () => {
+    const c = ctx("REQ-07");
+    await run(c, "get_issue", { ref: "REC-9745" });
+    await run(c, "get_comments", { ref: "REC-9745" });
+    const id = [...c.ledger.comments.values()].find((x) => x.body.includes("REDACT-901"))!.id;
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-07",
+      decision: "PASS",
+      explanation: "Superseding retest passes 28/28 on the target build.",
+      evidence: [{ issue_key: "REC-9745", comment_id: id, stance: "supports_pass", why: "retest" }],
+    });
+    expect(r.isError).toBeFalsy();
+    expect((r.terminal as any).evidence[0].issue_key).toBe(keyOf("REC-9745"));
+  });
+  it("lists the comment ids already read when comment_id is missing", async () => {
+    const c = ctx("REQ-07");
+    await run(c, "get_issue", { ref: "REC-9745" });
+    await run(c, "get_comments", { ref: "REC-9745" });
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-07",
+      decision: "PASS",
+      explanation: "Superseding retest passes 28/28 on the target build.",
+      evidence: [{ issue_key: "REC-9745", stance: "supports_pass", why: "retest" }],
+    });
+    expect(r.content).toMatch(/Comment ids you have read on TYN-\d+: .*\d+ \(#\d+, Priya Nair \/ QA Lead: "REDACT-901/);
   });
 });
