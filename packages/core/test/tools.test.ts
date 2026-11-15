@@ -310,3 +310,22 @@ describe("record_decision usability for small models", () => {
     expect(r.content).toMatch(/Comment ids you have read on TYN-\d+: .*\d+ \(#\d+, Priya Nair \/ QA Lead: "REDACT-901/);
   });
 });
+
+describe("check_scope context for the prompt", () => {
+  it("surfaces the p6 harness note on the same issue when the completion comment states no prompt (EVAL-55)", async () => {
+    const c = ctx();
+    await run(c, "get_comments", { ref: "REC-4323", limit: 30 });
+    const id = [...c.ledger.comments.values()].find((x) => x.body.includes("EVAL-55 completed"))!.id;
+    const r = await run(c, "check_scope", { ref: "REC-4323", comment_id: id });
+    expect(r.content).toMatch(/Build\/deployment .*MATCHES the target/);
+    expect(r.content).toMatch(/Other comments on TYN-\d+ state: comment \d+ .*prompt p6/);
+  });
+  it("tells the model the prompt is irrelevant to a non-prompt criterion when nowhere stated (REG-804)", async () => {
+    const c = ctx();
+    await run(c, "get_comments", { ref: "REC-2081", limit: 30 });
+    const id = [...c.ledger.comments.values()].find((x) => x.body.includes("REG-804"))!.id;
+    const r = await run(c, "check_scope", { ref: "REC-2081", comment_id: id });
+    expect(r.content).toMatch(/MATCHES the target/);
+    expect(r.content).toMatch(/only matters if the acceptance criterion concerns the deployed prompt/);
+  });
+});

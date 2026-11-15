@@ -6,7 +6,7 @@ import { z } from "zod";
 import { TOOL_LIMITS } from "../constants/tools";
 import { JiraError } from "../jira/errors";
 import { jqlString } from "../jira/jql";
-import { checkScopeText, noiseSignature } from "./parse";
+import { CORE_SCOPE_FIELDS, checkScopeText, extractField, noiseSignature } from "./parse";
 import { RECORD_KINDS } from "../models/dataset";
 import type { CommentView, ScopeEntry } from "../models/jira-view";
 import { kindLabel, releaseLabel, srcLabel } from "../utils/labels";
@@ -248,8 +248,41 @@ export const checkScope = defineTool({
           : r.verdict === "MATCH_ON_STATED_FIELDS"
             ? `MATCH on stated fields; not stated: ${r.notStated.join(", ")}`
             : r.verdict;
+      // Core build match is reported separately: the prompt only matters for criteria about the deployed prompt.
+      const core = r.fields.filter((f) => CORE_SCOPE_FIELDS.includes(f.field));
+      const coreLine = core.every((f) => f.status === "match")
+        ? "Build/deployment (release, commit, service, environment): MATCHES the target."
+        : `Build/deployment (release, commit, service, environment): ${core
+            .filter((f) => f.status !== "match")
+            .map(
+              (f) => `${f.field} ${f.status === "not_stated" ? "not stated" : `${f.found.join("/")} ≠ ${f.expected}`}`,
+            )
+            .join(", ")}.`;
+      const promptField = r.fields.find((f) => f.field === "prompt")!;
+      const lines = [coreLine];
+      if (promptField.status === "not_stated") {
+        // Surface prompt statements made elsewhere on the same issue (e.g. a harness configuration note).
+        const elsewhere = (await ctx.view.getComments(key))
+          .filter((o) => o.id !== c.id)
+          .map((o) => ({ o, prompts: extractField(o.body, "prompt") }))
+          .filter((x) => x.prompts.length);
+        lines.push(
+          elsewhere.length
+            ? `Prompt not stated in this comment. Other comments on ${key} state: ${elsewhere
+                .map(
+                  (x) =>
+                    `comment ${x.o.id} (#${x.o.position ?? "?"}, ${who(x.o)}, recorded ${x.o.recordedAt ?? "?"}): prompt ${x.prompts.join("/")}`,
+                )
+                .join("; ")}. Target prompt is ${ctx.target.prompt}.`
+            : `Prompt not stated anywhere on ${key}. This only matters if the acceptance criterion concerns the deployed prompt (${ctx.target.prompt}).`,
+        );
+      } else if (promptField.status !== "match") {
+        lines.push(
+          `Prompt ${promptField.found.join("/")} ≠ deployed ${ctx.target.prompt}: relevant if the criterion concerns the deployed prompt.`,
+        );
+      }
       return {
-        content: `${key} comment ${c.id} · recorded ${c.recordedAt ?? "?"} · ${who(c)}\n${fmt.join("\n")}\n→ ${verdict}`,
+        content: `${key} comment ${c.id} · recorded ${c.recordedAt ?? "?"} · ${who(c)}\n${fmt.join("\n")}\n→ ${verdict}\n${lines.join("\n")}`,
       };
     }),
 });

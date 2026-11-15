@@ -47,6 +47,16 @@ export interface ScopeCheck {
 }
 
 /** Compares the scope stated in a text with the target build. */
+/** All values of one scope field stated in a text (e.g. every "prompt pN" mention). */
+export const extractField = (text: string, field: TargetField): string[] => {
+  const found = new Set<string>();
+  for (const re of PATTERNS[field]) for (const m of text.matchAll(re)) found.add(m[1]!.toLowerCase());
+  return [...found];
+};
+
+/** Fields that identify the build/deployment; the prompt matters only for prompt-quality criteria. */
+export const CORE_SCOPE_FIELDS: readonly TargetField[] = ["release", "commit", "service", "environment"];
+
 export const checkScopeText = (text: string, target: Target): ScopeCheck => {
   const fields: FieldCheck[] = TARGET_FIELDS.map((field) => {
     const found = new Set<string>();
