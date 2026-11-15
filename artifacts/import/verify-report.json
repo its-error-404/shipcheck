@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "checkedAt": "2026-11-15T15:49:56.715Z",
+  "projectKey": "KAN",
+  "scopeLabel": "tyn-release-assessment-v2",
+  "counts": {
+    "expectedIssues": 400,
+    "foundIssues": 400,
+    "expectedComments": 2059,
+    "matchingComments": 2059,
+    "expectedLinks": 76,
+    "foundLinks": 76,
+    "statusMatches": 400
+  },
+  "mismatches": []
+}

@@ -1,0 +1,60 @@
+{
+  "key": "KAN-146",
+  "sourceId": "REQ-09",
+  "summary": "[REQ-09] Rollback rehearsal",
+  "criterion": "An approved rollback rehearsal must succeed on the target release and production configuration.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "FAIL",
+  "explanation": "The acceptance criterion requires verified success of the rollback rehearsal on R2.4/production/p7. While REC-6011 (KAN-108) confirms success for RB-401, REC-6198 (KAN-177) explicitly documents a failure for RB-402 with data loss in production. Since the requirement is linked to both records and a FAIL in any linked dependency blocks the release, the overall decision is FAIL. Developer status updates without QA verification details are insufficient.",
+  "evidence": [
+    {
+      "issueKey": "KAN-177",
+      "sourceId": "REC-6198",
+      "issueSummary": "[REC-6198] Rollback rehearsal (second team) - Rollback rehearsal",
+      "commentId": "10860",
+      "position": "2/5",
+      "recordedAt": "2026-11-08T11:30:00+05:30",
+      "actor": "Arjun Mehta",
+      "role": "QA Lead",
+      "excerpt": "Rollback rehearsal RB-402: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Restore completed but 214 session records written during the window were lost. Rehearsal FAILED.",
+      "stance": "supports_fail",
+      "why": "Comment #2 (10860) from Arjun Mehta (QA Lead) explicitly states rollback rehearsal RB-402 failed with data loss in production environment for R2.4/b7a91f2"
+    },
+    {
+      "issueKey": "KAN-108",
+      "sourceId": "REC-6011",
+      "issueSummary": "[REC-6011] Rollback rehearsal - Rollback rehearsal",
+      "commentId": "10528",
+      "position": "5/5",
+      "recordedAt": "2026-11-05T13:28:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Status updated.",
+      "stance": "supports_pass",
+      "why": "Comment #5 (10528) from Sam Patel (Developer) confirms RB-401 succeeded with no data loss in production for R2.4/b7a91f2"
+    },
+    {
+      "issueKey": "KAN-146",
+      "sourceId": "REQ-09",
+      "issueSummary": "[REQ-09] Rollback rehearsal",
+      "stance": "not_applicable",
+      "why": "Developer status updates alone do not satisfy QA verification requirements"
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 9,
+    "toolCalls": 9,
+    "toolErrors": 2,
+    "inputTokens": 30158,
+    "outputTokens": 6347,
+    "cachedTokens": 27322,
+    "durationMs": 288000,
+    "llmLatencyMs": 285644,
+    "waitedMs": 0
+  }
+}

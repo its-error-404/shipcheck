@@ -1,0 +1,53 @@
+{
+  "key": "KAN-92",
+  "sourceId": "REQ-01",
+  "summary": "[REQ-01] Automated regression tests",
+  "criterion": "All automated regression cases must pass on the target build.",
+  "mandatory": true,
+  "status": "resumed",
+  "decision": "PASS",
+  "explanation": "The acceptance criterion for REQ-01 requires all automated regression cases to pass on the target build (R2.4, commit b7a91f2, production). Evidence from REC-2081 (KAN-319) shows a completed regression run (REG-804) with 146/146 mandatory cases passing, matching the target release, commit, service, and environment. The earlier build's failure (REC-2299, KAN-133) pertains to a different commit (9c3e1aa) and thus does not affect the target build's validity. No FAIL evidence exists for the target build, so the requirement passes.",
+  "evidence": [
+    {
+      "issueKey": "KAN-319",
+      "sourceId": "REC-2081",
+      "issueSummary": "[REC-2081] Regression run - Automated regression tests",
+      "commentId": "11581",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Completed regression run REG-804: release R2.4; commit b7a91f2; service atlas-assistant; environment production. 146 of 146 mandatory regression cases pass.",
+      "stance": "supports_pass",
+      "why": "QA Lead Priya Nair confirmed 146/146 mandatory regression cases passed for R2.4, b7a91f2, production."
+    },
+    {
+      "issueKey": "KAN-92",
+      "sourceId": "REQ-01",
+      "issueSummary": "[REQ-01] Automated regression tests",
+      "commentId": "10439",
+      "position": "2/5",
+      "recordedAt": "2026-11-07T18:00:00+05:30",
+      "actor": "Sam Patel",
+      "role": "Developer",
+      "excerpt": "Implementation complete; marking requirement Done. Verification and approvals are tracked in linked issues.",
+      "stance": "supports_pass",
+      "why": "Developer Sam Patel marked implementation as complete with verification tracked in linked issues."
+    }
+  ],
+  "outstanding": [],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 3,
+    "toolCalls": 7,
+    "toolErrors": 0,
+    "inputTokens": 8542,
+    "outputTokens": 2145,
+    "cachedTokens": 6689,
+    "durationMs": 100010,
+    "llmLatencyMs": 98278,
+    "waitedMs": 0
+  }
+}

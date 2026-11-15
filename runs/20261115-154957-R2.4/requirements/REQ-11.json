@@ -1,0 +1,54 @@
+{
+  "key": "KAN-165",
+  "sourceId": "REQ-11",
+  "summary": "[REQ-11] Accessible keyboard handoff",
+  "criterion": "QA must verify keyboard navigation and focus handling for the handoff interface on the target release.",
+  "mandatory": true,
+  "status": "resumed",
+  "decision": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The acceptance criterion requires QA verification for R2.4/production, but KAN-105's QA result references R2.3 (older release) and KAN-262 lacks explicit QA confirmation for the target release. Developer claims about implementation completeness don't substitute for verified QA results matching R2.4, commit b7a91f2, production environment, and prompt p7. Without visible QA evidence meeting these parameters, the criterion remains unverified.",
+  "evidence": [
+    {
+      "issueKey": "KAN-165",
+      "sourceId": "REQ-11",
+      "issueSummary": "[REQ-11] Accessible keyboard handoff",
+      "stance": "inconclusive",
+      "why": "No QA evidence for R2.4/production in linked issues"
+    },
+    {
+      "issueKey": "KAN-105",
+      "sourceId": "REC-8801",
+      "issueSummary": "[REC-8801] Keyboard navigation QA - Accessible keyboard handoff",
+      "stance": "not_applicable",
+      "why": "QA result references R2.3 instead of target R2.4"
+    },
+    {
+      "issueKey": "KAN-262",
+      "sourceId": "REC-8515",
+      "issueSummary": "[REC-8515] Keyboard implementation - Accessible keyboard handoff",
+      "stance": "not_applicable",
+      "why": "Developer testing without QA verification for R2.4/production"
+    }
+  ],
+  "outstanding": [
+    "Verify if KAN-105's KBD-210 applies to R2.4",
+    "Confirm KAN-262 has QA results for R2.4/production"
+  ],
+  "anomalies": [
+    "KAN-105's QA result references R2.3 instead of target R2.4",
+    "KAN-262 lacks explicit QA verification for R2.4/production"
+  ],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 5,
+    "toolCalls": 10,
+    "toolErrors": 1,
+    "inputTokens": 15244,
+    "outputTokens": 4449,
+    "cachedTokens": 12839,
+    "durationMs": 194352,
+    "llmLatencyMs": 191639,
+    "waitedMs": 0
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "wallClockMs": 1064591,
+  "llm": {
+    "calls": 20,
+    "latencyMs": 749093,
+    "waitedMs": 2000,
+    "retries": 1,
+    "errors": 0
+  },
+  "tools": {
+    "calls": 20,
+    "errors": 2,
+    "timeMs": 6028,
+    "byTool": {
+      "search_issues": 2,
+      "get_issue": 7,
+      "submit_plan": 1,
+      "get_comments": 6,
+      "record_decision": 4
+    }
+  },
+  "jira": {
+    "httpCalls": 33,
+    "retries": 0,
+    "errors": 0,
+    "timeMs": 13429
+  },
+  "tokens": {
+    "input": 58602,
+    "output": 14208,
+    "cached": 53191,
+    "total": 72810
+  },
+  "cost": {
+    "usd": 0,
+    "prices": {
+      "inputPerMTok": 0,
+      "outputPerMTok": 0
+    }
+  },
+  "perRequirement": [
+    {
+      "requirement": "REQ-01",
+      "decision": "PASS",
+      "status": "resumed",
+      "turns": 3,
+      "toolCalls": 7,
+      "inputTokens": 8542,
+      "outputTokens": 2145,
+      "durationMs": 100010,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-02",
+      "decision": "FAIL",
+      "status": "resumed",
+      "turns": 6,
+      "toolCalls": 12,
+      "inputTokens": 21371,
+      "outputTokens": 5115,
+      "durationMs": 240649,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-03",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "decided",
+      "turns": 8,
+      "toolCalls": 8,
+      "inputTokens": 24136,
+      "outputTokens": 6614,
+      "durationMs": 688131,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-04",
+      "decision": "PASS",
+      "status": "resumed",
+      "turns": 5,
+      "toolCalls": 9,
+      "inputTokens": 16814,
+      "outputTokens": 3171,
+      "durationMs": 145845,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-05",
+      "decision": "FAIL",
+      "status": "resumed",
+      "turns": 9,
+      "toolCalls": 9,
+      "inputTokens": 29907,
+      "outputTokens": 7600,
+      "durationMs": 315810,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-06",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "resumed",
+      "turns": 3,
+      "toolCalls": 7,
+      "inputTokens": 8531,
+      "outputTokens": 3648,
+      "durationMs": 152238,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-07",
+      "decision": "PASS",
+      "status": "resumed",
+      "turns": 6,
+      "toolCalls": 11,
+      "inputTokens": 21988,
+      "outputTokens": 5104,
+      "durationMs": 354027,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-08",
+      "decision": "FAIL",
+      "status": "resumed",
+      "turns": 12,
+      "toolCalls": 12,
+      "inputTokens": 49117,
+      "outputTokens": 8517,
+      "durationMs": 384413,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-09",
+      "decision": "FAIL",
+      "status": "decided",
+      "turns": 9,
+      "toolCalls": 9,
+      "inputTokens": 30158,
+      "outputTokens": 6347,
+      "durationMs": 288000,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-10",
+      "decision": "PASS",
+      "status": "resumed",
+      "turns": 5,
+      "toolCalls": 5,
+      "inputTokens": 13065,
+      "outputTokens": 2799,
+      "durationMs": 112719,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-11",
+      "decision": "INSUFFICIENT_EVIDENCE",
+      "status": "resumed",
+      "turns": 5,
+      "toolCalls": 10,
+      "inputTokens": 15244,
+      "outputTokens": 4449,
+      "durationMs": 194352,
+      "stopReason": "terminal"
+    },
+    {
+      "requirement": "REQ-12",
+      "decision": "FAIL",
+      "status": "resumed",
+      "turns": 7,
+      "toolCalls": 7,
+      "inputTokens": 21079,
+      "outputTokens": 4423,
+      "durationMs": 279380,
+      "stopReason": "terminal"
+    }
+  ],
+  "discovery": {
+    "turns": 3,
+    "toolCalls": 3,
+    "inputTokens": 4308,
+    "outputTokens": 1247,
+    "durationMs": 81001
+  }
+}

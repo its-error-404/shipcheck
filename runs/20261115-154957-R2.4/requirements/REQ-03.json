@@ -1,0 +1,55 @@
+{
+  "key": "KAN-228",
+  "sourceId": "REQ-03",
+  "summary": "[REQ-03] Answer quality for deployed prompt",
+  "criterion": "The approved quality evaluation must achieve at least 90 percent and match the deployed prompt p7.",
+  "mandatory": true,
+  "status": "decided",
+  "decision": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The evaluation in REC-4323 (EVAL-55) achieved 96.2% accuracy in production but used prompt p6 instead of the required p7. REC-1600's evaluation was in staging (not production) and used commit 9c3e1aa (not b7a91f2). No evidence matches the target release, commit, prompt, and environment. The requirement mandates both accuracy ≥90% and prompt p7 in production, which is unmet.",
+  "evidence": [
+    {
+      "issueKey": "KAN-29",
+      "sourceId": "REC-4323",
+      "issueSummary": "[REC-4323] Answer quality evaluation - Answer quality for deployed prompt",
+      "commentId": "10131",
+      "position": "4/5",
+      "recordedAt": "2026-11-08T14:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "EVAL-55 completed: release R2.4; commit b7a91f2; service atlas-assistant; environment production. Answer accuracy 96.2 percent across 500 graded questions. Approved.",
+      "stance": "inconclusive",
+      "why": "Evaluation used prompt p6 instead of required p7."
+    },
+    {
+      "issueKey": "KAN-217",
+      "sourceId": "REC-1600",
+      "issueSummary": "[REC-1600] Answer quality evaluation (pre-release build) - Answer quality for deployed prompt",
+      "commentId": "11068",
+      "position": "4/5",
+      "recordedAt": "2026-11-07T16:00:00+05:30",
+      "actor": "Priya Nair",
+      "role": "QA Lead",
+      "excerpt": "Evaluation EVAL-61: release R2.4; commit 9c3e1aa; service atlas-assistant; environment staging; prompt p7. Answer accuracy 91.0 percent.",
+      "stance": "inconclusive",
+      "why": "Evaluation in staging environment, not production."
+    }
+  ],
+  "outstanding": [
+    "Verify if any production evaluations used prompt p7 for R2.4."
+  ],
+  "anomalies": [],
+  "agent": {
+    "model": "qwen3:8b",
+    "stopReason": "terminal",
+    "turns": 8,
+    "toolCalls": 8,
+    "toolErrors": 0,
+    "inputTokens": 24136,
+    "outputTokens": 6614,
+    "cachedTokens": 22482,
+    "durationMs": 688131,
+    "llmLatencyMs": 383577,
+    "waitedMs": 2000
+  }
+}
