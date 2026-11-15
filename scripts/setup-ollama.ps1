@@ -46,14 +46,22 @@ foreach ($k in $settings.Keys) {
 
 Step 3 "Restarting Ollama so the settings take effect"
 Get-Process | Where-Object { $_.ProcessName -like "ollama*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
-$app = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
-if (Test-Path $app) { Start-Process $app } else { Start-Process ollama -ArgumentList "serve" -WindowStyle Hidden }
+Start-Sleep -Seconds 3
+$ollamaExe = (Get-Command ollama).Source
+$log = Join-Path $env:TEMP "ollama-serve.log"
+$errLog = Join-Path $env:TEMP "ollama-serve.err.log"
+Write-Host "  Starting: $ollamaExe serve  (logs: $errLog)"
+# Start the server directly (deterministic); it inherits the OLLAMA_* settings set above.
+Start-Process -FilePath $ollamaExe -ArgumentList "serve" -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError $errLog
 $ready = $false
-for ($i = 0; $i -lt 30 -and -not $ready; $i++) {
+for ($i = 0; $i -lt 90 -and -not $ready; $i++) {
   try { Invoke-RestMethod -Uri "http://localhost:11434/api/version" -TimeoutSec 2 | Out-Null; $ready = $true } catch { Start-Sleep -Seconds 1 }
 }
-if (-not $ready) { throw "Ollama server did not start on http://localhost:11434" }
+if (-not $ready) {
+  Write-Host "  Server log (last 40 lines):" -ForegroundColor Yellow
+  if (Test-Path $errLog) { Get-Content $errLog -Tail 40 }
+  throw "Ollama server did not start on http://localhost:11434 within 90 s (see log above)"
+}
 Write-Host "  Ollama server is up"
 
 Step 4 "Pulling model $Model (several GB on first run)"
