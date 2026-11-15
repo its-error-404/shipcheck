@@ -121,7 +121,7 @@ export const renderReport = (r: AssessmentResult, metrics?: RunMetrics, opts: Re
     push("## Run issues", "", "None: every investigation completed and recorded a validated decision.", "");
   }
 
-  if (metrics) push(...renderMetrics(metrics));
+  if (metrics) push(...renderMetrics(metrics, r.requirements.filter((q) => q.status === "resumed").length));
 
   push(
     "---",
@@ -189,9 +189,15 @@ const renderEvidence = (e: EvidenceItem, ref: (key: string, sourceId?: string) =
   return lines;
 };
 
-const renderMetrics = (m: RunMetrics): string[] => [
+const renderMetrics = (m: RunMetrics, reused: number): string[] => [
   "## Execution metrics",
   "",
+  ...(reused
+    ? [
+        `_${reused} requirement(s) were reused from an earlier run (\`--resume\`). The totals below cover only this run; the reused investigations' model calls and tokens are in that run's report (per-requirement rows below keep their original figures)._`,
+        "",
+      ]
+    : []),
   "| Metric | Value |",
   "|---|---|",
   `| Wall-clock time | ${secs(m.wallClockMs)} |`,

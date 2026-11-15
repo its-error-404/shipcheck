@@ -46,6 +46,8 @@ export class LiveRuns {
   private last?: LiveStatus["last"];
   private pending?: Promise<SessionOutcome | undefined>;
   private replay: (TraceEvent & { ts: string })[] = [];
+  /** Set while a run is being prepared, so two quick requests cannot both start one. */
+  private starting = false;
 
   constructor(
     private readonly io: IoServer,
@@ -62,7 +64,16 @@ export class LiveRuns {
 
   /** Validates config and creates the run folder, then runs in the background. Returns the run info at once. */
   start = async (input: StartRunInput): Promise<SessionInfo> => {
-    if (this.active) throw new RunBusyError(this.active.info.runId);
+    if (this.active || this.starting) throw new RunBusyError(this.active?.info.runId ?? "starting");
+    this.starting = true;
+    try {
+      return await this.launch(input);
+    } finally {
+      this.starting = false;
+    }
+  };
+
+  private launch = async (input: StartRunInput): Promise<SessionInfo> => {
     const sink = new CallbackTrace((event: TraceEvent & { ts: string }) => {
       this.replay.push(event);
       if (this.replay.length > REPLAY_LIMIT) this.replay.splice(0, this.replay.length - REPLAY_LIMIT);

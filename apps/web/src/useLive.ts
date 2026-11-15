@@ -28,7 +28,9 @@ export const useLive = (onRunEnded: () => void): LiveState => {
   const [status, setStatus] = useState<LiveStatus>({});
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const ended = useRef(onRunEnded);
-  ended.current = onRunEnded;
+  useEffect(() => {
+    ended.current = onRunEnded;
+  });
 
   useEffect(() => {
     const socket = io({ transports: ["websocket", "polling"] });

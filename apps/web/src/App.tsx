@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { LivePanel } from "./components/LivePanel";
 import { NewRunDialog } from "./components/NewRunDialog";
@@ -25,7 +25,7 @@ export const App = () => {
       setError(undefined);
       setSelected((s) => s ?? list.find((r) => r.state === "complete" && !r.partial)?.id ?? list[0]?.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(`Cannot reach the server: ${e instanceof Error ? e.message : String(e)}`);
     }
   }, []);
 
@@ -62,10 +62,12 @@ export const App = () => {
     setSelected(id);
   };
 
-  const requirementIds = useMemo(() => {
-    const source = runs.find((r) => r.state === "complete" && !r.partial) ? detail?.requirements : undefined;
-    return (source ?? detail?.requirements ?? []).map((r) => r.sourceId ?? r.key).sort();
-  }, [runs, detail]);
+  // Requirement IDs for "only selected" come from the last full run viewed, never from a partial one.
+  const [requirementIds, setRequirementIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (detail && !detail.summary.partial && detail.requirements.length)
+      setRequirementIds(detail.requirements.map((r) => r.sourceId ?? r.key).sort());
+  }, [detail]);
 
   const start = async (only?: string[], resumeFrom?: string) => {
     const info = await api.start({ only, resumeFrom });
@@ -104,7 +106,7 @@ export const App = () => {
       <div className="layout">
         <RunList runs={runs} selected={selected} activeRunId={activeRunId} onSelect={select} />
         <main className="main">
-          {error && <div className="notice notice-bad">Cannot reach the server: {error}</div>}
+          {error && <div className="notice notice-bad">{error}</div>}
           {live.status.last && !live.status.last.ok && !activeRunId && (
             <div className="notice notice-bad">
               Run {live.status.last.runId} failed: {live.status.last.error}

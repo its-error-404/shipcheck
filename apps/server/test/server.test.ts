@@ -6,11 +6,12 @@ import {
   type RequirementResult,
   type SessionOptions,
 } from "@shipcheck/core";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { io as connect, type Socket } from "socket.io-client";
 import { afterEach, describe, expect, it } from "vitest";
+import { prepareSession } from "@shipcheck/core";
 import { buildApp, type ShipcheckApp } from "../src/app";
 import { LIVE_EVENTS } from "../src/constants";
 import type { SessionFactory } from "../src/live";
@@ -30,9 +31,10 @@ const requirement: RequirementResult = {
 /** A session that writes a real run folder, emits a couple of trace events and waits for `gate`. */
 const fakeFactory = (
   gate: Promise<void> = Promise.resolve(),
-  opts: { fail?: string; seenOnly?: (o: SessionOptions) => void } = {},
+  opts: { fail?: string; seenOnly?: (o: SessionOptions) => void; prepareMs?: number } = {},
 ) =>
   (async (o) => {
+    if (opts.prepareMs) await new Promise((r) => setTimeout(r, opts.prepareMs));
     if (opts.fail) throw new Error(opts.fail);
     opts.seenOnly?.(o);
     const runId = newRunId("R2.4");
@@ -188,5 +190,56 @@ describe("web server", () => {
     expect((await app.inject({ url: "/api/runs/..%2F..%2Fetc" })).statusCode).toBe(404);
     expect((await app.inject({ url: "/api/runs/nope" })).statusCode).toBe(404);
     expect((await app.inject({ url: "/api/nope" })).statusCode).toBe(404);
+  });
+
+  it("starts only one run when two requests arrive at the same moment", async () => {
+    const { app } = await start(fakeFactory(Promise.resolve(), { prepareMs: 50 }));
+    const [a, b] = await Promise.all([
+      app.inject({ method: "POST", url: "/api/runs", payload: {} }),
+      app.inject({ method: "POST", url: "/api/runs", payload: {} }),
+    ]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([202, 409]);
+  });
+
+  it("refuses runs and live events requested by other websites", async () => {
+    const { app, url } = await start(fakeFactory());
+    const crossSite = await app.inject({
+      method: "POST",
+      url: "/api/runs",
+      headers: { origin: "https://evil.example" },
+      payload: {},
+    });
+    expect(crossSite.statusCode).toBe(403);
+    const plain = await app.inject({
+      method: "POST",
+      url: "/api/runs",
+      headers: { "content-type": "text/plain" },
+      payload: "x",
+    });
+    expect(plain.statusCode).toBe(415);
+    const own = await app.inject({ method: "POST", url: "/api/runs", headers: { origin: url }, payload: {} });
+    expect(own.statusCode).toBe(202);
+
+    socket = connect(url, { transports: ["websocket"], extraHeaders: { origin: "https://evil.example" } });
+    const outcome = await new Promise<string>((resolve) => {
+      socket!.on("connect", () => resolve("connected"));
+      socket!.on("connect_error", () => resolve("refused"));
+    });
+    expect(outcome).toBe("refused");
+  });
+
+  it("rejects resuming from a run with no saved results", async () => {
+    const { app } = await start(fakeFactory());
+    const res = await app.inject({ method: "POST", url: "/api/runs", payload: { resumeFrom: "20990101-000000-R9" } });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatch(/No saved results/);
+  });
+});
+
+describe("prepareSession", () => {
+  it("validates configuration before creating a run folder", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "shipcheck-runs-"));
+    await expect(prepareSession({ outDir: dir, env: {} })).rejects.toThrow(/JIRA_BASE_URL/);
+    expect(await readdir(dir)).toEqual([]);
   });
 });

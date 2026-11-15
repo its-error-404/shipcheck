@@ -66,12 +66,9 @@ export const prepareSession = async (o: SessionOptions = {}): Promise<PreparedSe
   const assessCfg = loadAssessConfig(env);
   const release = o.release ?? assessCfg.ASSESS_RELEASE;
   const scopeLabel = o.scopeLabel ?? assessCfg.ASSESS_SCOPE_LABEL;
-  const runId = newRunId(release);
-  const store = await RunStore.create(o.outDir ?? "runs", runId);
-  const jsonl = new JsonlTrace(store.tracePath);
-  const memory = new MemoryTrace();
-  const trace = new TeeTrace([jsonl, memory, ...(o.sinks ?? [])]);
-
+  // The clients need the trace now; the file and metrics sinks join once the run folder exists.
+  const sinks: TraceSink[] = [...(o.sinks ?? [])];
+  const trace = new TeeTrace(sinks);
   let jira = o.jira;
   let projectKey = o.projectKey;
   let siteUrl = o.siteUrl;
@@ -107,6 +104,13 @@ export const prepareSession = async (o: SessionOptions = {}): Promise<PreparedSe
       trace,
     });
   }
+
+  // Created only after config is validated, so a config error leaves no empty run folder.
+  const runId = newRunId(release);
+  const store = await RunStore.create(o.outDir ?? "runs", runId);
+  const jsonl = new JsonlTrace(store.tracePath);
+  const memory = new MemoryTrace();
+  sinks.unshift(jsonl, memory);
 
   const info: SessionInfo = {
     runId,

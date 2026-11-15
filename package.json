@@ -18,7 +18,6 @@
     "import": "tsx apps/cli/src/index.ts import",
     "verify-import": "tsx apps/cli/src/index.ts verify-import",
     "assess": "tsx apps/cli/src/index.ts assess",
-    "fake-jira": "tsx packages/core/src/testing/fake-jira-server.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

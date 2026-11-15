@@ -147,17 +147,16 @@ scripts/       setup-ollama.ps1
 
 ## Commands
 
-| Command                                  | What it does                                     |
-| ---------------------------------------- | ------------------------------------------------ |
-| `npm run check`                          | Typecheck, lint, format check, tests             |
-| `npm run verify-jira`                    | Credentials + project check                      |
-| `npm run import [-- --dry-run]`          | Idempotent import into Jira                      |
-| `npm run verify-import`                  | Diff Jira against the dataset                    |
-| `npm run verify-llm [-- --models a,b]`   | List models; probe tool calling and latency      |
-| `npm run assess [-- --resume runs/<id>]` | Run the agent and write the report               |
-| `npm run evaluate -- runs/<id>`          | Score a run against expected outcomes            |
-| `npm run ui`                             | Build the web UI and serve UI + API (:4000)      |
-| `npm run serve`                          | Serve the API (and a built UI)                   |
-| `npm run web:dev`                        | UI dev server with hot reload (:5173)            |
-| `npm run setup:ollama`                   | Local LLM setup (Windows)                        |
-| `npm run fake-jira`                      | In-memory Jira over HTTP for offline development |
+| Command                                  | What it does                                |
+| ---------------------------------------- | ------------------------------------------- |
+| `npm run check`                          | Typecheck, lint, format check, tests        |
+| `npm run verify-jira`                    | Credentials + project check                 |
+| `npm run import [-- --dry-run]`          | Idempotent import into Jira                 |
+| `npm run verify-import`                  | Diff Jira against the dataset               |
+| `npm run verify-llm [-- --models a,b]`   | List models; probe tool calling and latency |
+| `npm run assess [-- --resume runs/<id>]` | Run the agent and write the report          |
+| `npm run evaluate -- runs/<id>`          | Score a run against expected outcomes       |
+| `npm run ui`                             | Build the web UI and serve UI + API (:4000) |
+| `npm run serve`                          | Serve the API (and a built UI)              |
+| `npm run web:dev`                        | UI dev server with hot reload (:5173)       |
+| `npm run setup:ollama`                   | Local LLM setup (Windows)                   |

@@ -222,6 +222,46 @@ describe("record_decision + ledger", () => {
     });
     expect(r.content).toMatch(/Still missing.*REC-9635/);
   });
+  /** Opens and reads a requirement, its linked records and their links (what the coverage gate requires). */
+  const coverAll = async (c: ToolContext, req: string) => {
+    const bySid = new Map(ds.records.map((r) => [r.source_id, r]));
+    const refs = new Set([req]);
+    for (const l of bySid.get(req)!.links) {
+      refs.add(l);
+      for (const l2 of bySid.get(l)?.links ?? []) refs.add(l2);
+    }
+    await cover(c, ...refs);
+  };
+  const commentWith = async (c: ToolContext, sid: string, text: string) =>
+    (await c.view.getComments(keyOf(sid))).find((x) => x.body.includes(text))!.id;
+
+  it("rejects a FAIL whose only result was recorded on another prompt (REQ-03: evaluation on p6, target p7)", async () => {
+    const c = ctx("REQ-03");
+    await coverAll(c, "REQ-03");
+    const id = await commentWith(c, "REC-4323", "EVAL-55 completed");
+    await run(c, "check_scope", { ref: "REC-4323", comment_id: id });
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-03",
+      decision: "FAIL",
+      explanation: "The quality evaluation ran on prompt bundle p6, not the deployed prompt.",
+      evidence: [{ issue_key: "REC-4323", comment_id: id, stance: "supports_fail", why: "evaluated p6" }],
+    });
+    expect(r.isError).toBe(true);
+    expect(r.content).toMatch(/different scope: comment \d+: prompt p6 \(target p7\)/);
+    expect(r.content).toMatch(/INSUFFICIENT_EVIDENCE/);
+  });
+  it("accepts a FAIL backed by a failure recorded on the target build (REQ-02: retest ISO-318)", async () => {
+    const c = ctx("REQ-02");
+    await coverAll(c, "REQ-02");
+    const id = await commentWith(c, "REC-1001", "ISO-318");
+    const r = await run(c, "record_decision", {
+      requirement_key: "REQ-02",
+      decision: "FAIL",
+      explanation: "Retest ISO-318 on the target build shows cross-customer exposure.",
+      evidence: [{ issue_key: "REC-1001", comment_id: id, stance: "supports_fail", why: "on-target failure" }],
+    });
+    expect(r.isError).toBeFalsy();
+  });
   it("accepts a properly evidenced decision", async () => {
     const c = ctx("REQ-07");
     await cover(c, "REQ-07", "REC-9745", "REC-6499");

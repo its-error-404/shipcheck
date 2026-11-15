@@ -90,6 +90,7 @@ export const registerRunRoutes = (app: FastifyInstance, deps: RunRoutesDeps) => 
       const from = String(body.resumeFrom);
       if (!isSafeName(from)) return reply.code(400).send({ error: "resumeFrom must be a run id." });
       resume = await RunStore.loadResume(join(runsDir, from));
+      if (resume.size === 0) return reply.code(400).send({ error: `No saved results in run ${from}.` });
     }
     try {
       const info = await live.start({ only, resume });
